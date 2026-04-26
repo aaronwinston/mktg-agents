@@ -65,3 +65,17 @@ class ScrapeItem(SQLModel, table=True):
     score_reasoning: Optional[str] = None
     surfaced_to_user_at: Optional[datetime] = None
     dismissed_at: Optional[datetime] = None
+
+class AgentSession(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    title: str
+    type: str = Field(default="blog")
+    audience: Optional[str] = None
+    description: Optional[str] = None
+    status: str = Field(default="pending")
+    current_agent: Optional[str] = None
+    progress: int = Field(default=0)
+    output: Optional[str] = None
+    deleted: bool = Field(default=False)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)

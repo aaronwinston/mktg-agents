@@ -14,6 +14,7 @@ export default function Sidebar() {
 
   const navItems = [
     { href: '/dashboard', label: 'Dashboard' },
+    { href: '/sessions', label: 'Sessions' },
     { href: '/intelligence', label: 'Intelligence' },
     { href: '/settings', label: 'Settings' },
   ];

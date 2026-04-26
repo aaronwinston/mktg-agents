@@ -13,3 +13,7 @@ python-multipart==0.0.9
 arize-otel
 openinference-instrumentation-anthropic
 opentelemetry-sdk
+beautifulsoup4
+lxml
+aiofiles
+python-dotenv

@@ -1,22 +1,21 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
 import Sidebar from '@/components/Sidebar';
-
-const inter = Inter({ subsets: ['latin'] });
+import { AgentTracker } from '@/components/layout/AgentTracker';
 
 export const metadata: Metadata = {
   title: 'ForgeOS',
-  description: 'Marketing command center',
+  description: 'AI-native editorial and marketing operating system',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
-        <div className="flex h-screen bg-background">
+      <body>
+        <div className="flex h-screen bg-bg-primary overflow-hidden">
           <Sidebar />
           <main className="flex-1 overflow-auto">{children}</main>
+          <AgentTracker />
         </div>
       </body>
     </html>
