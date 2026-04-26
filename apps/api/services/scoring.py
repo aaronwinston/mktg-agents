@@ -31,6 +31,18 @@ Score each item 1-10 on relevance to Aaron's interests:
 Return ONLY a JSON object: {"score": <number>, "reasoning": "<one sentence>"}
 """
 
+def load_synthesis_prompt() -> str:
+    """Load synthesis prompt for generating why_relevant and content_angle"""
+    return """You are the editorial director for an AI company's marketing team (Arize AI).
+Your audience is Aaron Winston, head of content, comms, and AR.
+Generate two concise lines for this intelligence item:
+
+1. why_relevant: 1-2 sentences explaining why this matters to Aaron's interests in AI observability, agents, and developer tools
+2. content_angle: 1-2 sentences suggesting how to use this as content (blog post, email, social media, etc.)
+
+Return ONLY a JSON object: {"why_relevant": "<text>", "content_angle": "<text>"}
+"""
+
 def score_item(title: str, body: str, source: str) -> tuple[float, str]:
     scoring_prompt = load_scoring_prompt()
     try:
@@ -52,6 +64,28 @@ def score_item(title: str, body: str, source: str) -> tuple[float, str]:
         pass
     return 5.0, "Scoring failed"
 
+def synthesize_item(title: str, body: str, source: str) -> tuple[str, str]:
+    """Generate why_relevant and content_angle for high-scoring items"""
+    synthesis_prompt = load_synthesis_prompt()
+    try:
+        response = client.messages.create(
+            model=settings.MODEL_GENERATION,
+            max_tokens=300,
+            system=synthesis_prompt,
+            messages=[{
+                "role": "user",
+                "content": f"Source: {source}\nTitle: {title}\nBody: {body[:500]}"
+            }]
+        )
+        text = response.content[0].text.strip()
+        match = re.search(r'\{.*\}', text, re.DOTALL)
+        if match:
+            data = json.loads(match.group())
+            return data.get("why_relevant", ""), data.get("content_angle", "")
+    except Exception:
+        pass
+    return "", ""
+
 def score_items_batch(items: list[dict]) -> list[dict]:
     tracer = get_tracer()
     with (tracer.start_as_current_span("score_items_batch") if tracer else _nullcontext()) as span:
@@ -68,6 +102,7 @@ def score_items_batch(items: list[dict]) -> list[dict]:
             )
             item["score_relevance"] = score
             item["score_reasoning"] = reasoning
+            item["score"] = score
             scored.append(item)
 
         if span and tracer:
@@ -76,9 +111,36 @@ def score_items_batch(items: list[dict]) -> list[dict]:
 
         return scored
 
+def synthesize_items_batch(items: list[dict]) -> list[dict]:
+    """Post-scrape synthesis pass: generate why_relevant and content_angle for scored items >= 7"""
+    tracer = get_tracer()
+    with (tracer.start_as_current_span("synthesize_items_batch") if tracer else _nullcontext()) as span:
+        if span and tracer:
+            span.set_attribute("openinference.span.kind", "CHAIN")
+            high_score_count = sum(1 for i in items if (i.get("score") or 0) >= 7)
+            span.set_attribute("input.value", f"Synthesizing {high_score_count} high-score items")
+
+        synthesized = []
+        for item in items:
+            if (item.get("score") or 0) >= 7:
+                why_relevant, content_angle = synthesize_item(
+                    title=item.get("title", ""),
+                    body=item.get("body", ""),
+                    source=item.get("source", "")
+                )
+                item["why_relevant"] = why_relevant
+                item["content_angle"] = content_angle
+            synthesized.append(item)
+
+        if span and tracer:
+            span.set_attribute("output.value", f"Synthesized {len(synthesized)} items")
+
+        return synthesized
+
 
 from contextlib import contextmanager
 
 @contextmanager
 def _nullcontext():
     yield None
+

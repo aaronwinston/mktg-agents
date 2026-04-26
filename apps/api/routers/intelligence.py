@@ -3,7 +3,7 @@ from sqlmodel import Session, select
 from database import get_session
 from models import ScrapeItem
 from services.scraping import run_all_scrapers, DEFAULT_SUBREDDITS, GITHUB_TOPICS, ARXIV_FEEDS, DEFAULT_RSS_FEEDS
-from services.scoring import score_items_batch
+from services.scoring import score_items_batch, synthesize_items_batch
 from datetime import datetime
 
 router = APIRouter(prefix="/api/intelligence", tags=["intelligence"])
@@ -13,8 +13,8 @@ def get_feed(session: Session = Depends(get_session)):
     items = session.exec(
         select(ScrapeItem)
         .where(ScrapeItem.dismissed_at == None)  # noqa: E711
-        .where(ScrapeItem.score_relevance >= 7)
-        .order_by(ScrapeItem.score_relevance.desc())
+        .where(ScrapeItem.score >= 7)
+        .order_by(ScrapeItem.score.desc())
     ).all()
     return items
 
@@ -23,7 +23,7 @@ def list_items(limit: int = 50, session: Session = Depends(get_session)):
     items = session.exec(
         select(ScrapeItem)
         .where(ScrapeItem.dismissed_at == None)  # noqa: E711
-        .order_by(ScrapeItem.fetched_at.desc())
+        .order_by(ScrapeItem.created_at.desc())
         .limit(limit)
     ).all()
     return items
@@ -53,8 +53,9 @@ async def trigger_scrape(background_tasks: BackgroundTasks, session: Session = D
     async def run():
         items = await run_all_scrapers()
         scored = score_items_batch(items)
+        synthesized = synthesize_items_batch(scored)
         with Session(session_bind) as s:
-            for item_data in scored:
+            for item_data in synthesized:
                 existing = s.exec(
                     select(ScrapeItem).where(ScrapeItem.source_url == item_data.get("source_url", ""))
                 ).first()
@@ -83,3 +84,4 @@ def get_config():
             "https://arize.com/blog/feed/",
         ],
     }
+

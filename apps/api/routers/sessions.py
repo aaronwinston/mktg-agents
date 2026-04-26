@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select
 from database import get_session
-from models import AgentSession
+from models import PipelineRun
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
