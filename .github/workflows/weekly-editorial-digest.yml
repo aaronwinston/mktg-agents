@@ -1,0 +1,18 @@
+name: Weekly editorial digest
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 14 * * 1"
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print workflow guidance
+        run: |
+          echo "Use workflows/weekly-editorial.workflow.md"
+          echo "Use skills/foundation/ai-researcher/SKILL.md"
+          echo "Use skills/editorial/editorial-director/SKILL.md"
+          echo "Use skills/editorial/content-ops-manager/SKILL.md"
