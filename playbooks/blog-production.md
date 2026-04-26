@@ -15,9 +15,11 @@ Use `briefs/blog-brief-template.md`.
 
 ```
 blog brief
+→ competitive-intelligence   [proactive scan: check if topic has competitive surface area]
 → editorial-director
 → ai-researcher
 → dev-copywriter
+→ competitive-intelligence   [mid-stream: land mines, differentiation gaps]
 → dev-reviewer
 → technical-fact-checker
 → seo-strategist
@@ -30,47 +32,57 @@ blog brief
 
 ## Steps
 
-### 1. Editorial direction
+### 1. Competitive scan
+Use `skills/specialization/competitive-intelligence/SKILL.md`.
+Check `context/competitive/` for relevant research. If competitive surface area is low or none, note it and proceed — do not slow down low-stakes content.
+Output: competitive surface area rating, any framing flags, land mines to avoid (if applicable).
+
+### 2. Editorial direction
 Use `skills/editorial/editorial-director/SKILL.md`.
 Output must include: audience, reader problem, core narrative, recommended angle, suggested structure, proof points needed, risks.
 
-### 2. Research
+### 3. Research
 Use `skills/foundation/ai-researcher/SKILL.md`.
 Output must include: research summary, developer pain points, content angles, claims requiring verification.
 
-### 3. Draft
+### 4. Draft
 Use `skills/foundation/dev-copywriter/SKILL.md`.
 Output must include: suggested title, draft, claims to verify, suggested visuals.
 
-### 4. Developer review
+### 5. Competitive review
+Use `skills/specialization/competitive-intelligence/SKILL.md`.
+Review the draft for land mines, claims a competitor also makes, and unused differentiation angles. If competitive surface area was rated low in step 1, this step can be skipped.
+Output: competitive sharpness rating, flagged passages with rewrites, verdict.
+
+### 6. Developer review
 Use `skills/foundation/dev-reviewer/SKILL.md`.
 Output must include: developer fluency issues, hype or vagueness flags, recommended rewrites, redline edits.
 
-### 5. Technical fact-check
+### 7. Technical fact-check
 Use `skills/specialization/technical-fact-checker/SKILL.md`.
 Output must include a claims table with status for every technical claim.
 
-### 6. SEO review
+### 8. SEO review
 Use `skills/specialization/seo-strategist/SKILL.md`.
 Output must include: search intent, title options, slug, meta description, internal links, FAQ opportunities.
 
-### 7. Copy edit
+### 9. Copy edit
 Use `skills/editorial/copy-chief/SKILL.md`.
 Output must include final revised copy and notes on key changes.
 
-### 8. Claims review
+### 10. Claims review
 Use `skills/quality/claims-risk-reviewer/SKILL.md`.
 Output must include: claims by risk level, approval checklist, safer language for flagged claims.
 
-### 9. Final publish review
+### 11. Final publish review
 Use `skills/quality/final-publish-reviewer/SKILL.md`.
 Output must include a clear publish decision: Ready / Ready after minor edits / Blocked.
 
-### 10. Distribution
+### 12. Distribution
 Use `skills/specialization/social-editor/SKILL.md`.
 Output must include: LinkedIn variants, X variants, founder version, company version.
 
-### 11. Operations
+### 13. Operations
 Use `skills/editorial/content-ops-manager/SKILL.md`.
 Output must include: publishing checklist, calendar recommendation, next action.
 

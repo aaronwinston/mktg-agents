@@ -83,12 +83,14 @@ If someone gives you a task, recommend or use the appropriate skill:
 | Task | Skill |
 |------|-------|
 | Evaluate angle, narrative, or strategy | `skills/editorial/editorial-director` |
+| Product positioning, messaging, category strategy | `skills/specialization/pmm-lead` |
+| Competitive framing, differentiation, market context | `skills/specialization/competitive-intelligence` |
 | Draft developer blog or explainer | `skills/foundation/dev-copywriter` |
 | Technical accuracy review | `skills/specialization/technical-fact-checker` |
 | SEO brief or keyword strategy | `skills/specialization/seo-strategist` |
 | Launch copy or PR | `skills/specialization/launch-comms-writer` |
 | Social posts from a draft | `skills/specialization/social-editor` |
-| Analyst response or brief | `skills/specialization/analyst-relations-writer` |
+| Analyst response or briefing | `skills/specialization/analyst-relations-writer` |
 | Customer story | `skills/specialization/customer-story-producer` |
 | Executive quote or comms | `skills/specialization/executive-comms-writer` |
 | Lifecycle email | `skills/specialization/lifecycle-email-writer` |
@@ -96,6 +98,18 @@ If someone gives you a task, recommend or use the appropriate skill:
 | Check claims risk | `skills/quality/claims-risk-reviewer` |
 | Final readiness check | `skills/quality/final-publish-reviewer` |
 | Daily AI research summary | `skills/foundation/ai-researcher` |
+
+### When to invoke competitive-intelligence proactively
+
+Do not wait to be asked. Invoke `skills/specialization/competitive-intelligence` at the start of any task that touches:
+- AI observability, LLM evaluation, agent debugging, or production AI quality
+- Category claims or market positioning
+- A product launch or feature announcement
+- Analyst relations or briefing content
+- Thought leadership or founder POV content
+- SEO keywords that competitors are likely targeting
+
+Check `context/competitive/` for available research. If the folder is empty or has nothing relevant, note it and proceed — but flag that competitive context is missing.
 
 ---
 

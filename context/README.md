@@ -15,6 +15,7 @@ context/
   audience/          # Who you're writing for — ICPs, personas, community intel
   research/          # Papers, articles, external sources agents can cite or reference
   approved-messaging/ # Locked copy — taglines, product descriptions, legal-cleared claims
+  competitive/       # Competitor research, positioning analysis, differentiation notes
 ```
 
 ---
@@ -94,6 +95,18 @@ Agents use these to:
 
 ---
 
+### `competitive/`
+Competitor research, positioning analysis, battle card notes, win/loss observations, analyst coverage of competitors. Anything that helps the `competitive-intelligence` skill give real, grounded analysis instead of generic observations.
+
+Agents use these to:
+- Ground competitive claims in actual research
+- Frame differentiation against what competitors really say
+- Prepare analyst responses that anticipate competitive narratives
+
+**The `competitive-intelligence` skill is invoked proactively throughout the editorial process — the better this folder is, the sharper every piece of content becomes.**
+
+---
+
 ## How agents should use this directory
 
 When producing any content, agents should:
@@ -103,12 +116,14 @@ When producing any content, agents should:
 3. Check `context/audience/` — confirm who they're writing for
 4. Check `context/approved-messaging/` — pull exact phrasing where it exists
 5. Check `context/research/` — if the topic has relevant sources there, use them
+6. Check `context/competitive/` — for any content with competitive surface area
 
 **Instruction to include in any task prompt:**
 ```
 Before writing, read context/README.md and check the relevant subdirectories for
 files that inform this task. Use my-writing/ to match voice, arize/ for product
-accuracy, approved-messaging/ for any locked copy, and audience/ to calibrate depth.
+accuracy, approved-messaging/ for any locked copy, audience/ to calibrate depth,
+and competitive/ for any competitive framing.
 ```
 
 ---
