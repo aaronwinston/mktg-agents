@@ -79,3 +79,13 @@ class AgentSession(SQLModel, table=True):
     deleted: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class PipelineStep(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    pipeline_run_id: int = Field(foreign_key="agentsession.id")
+    agent_name: str
+    input_text: str
+    output_text: str
+    started_at: datetime = Field(default_factory=datetime.utcnow)
+    completed_at: Optional[datetime] = None
+    tokens_used: Optional[int] = None
