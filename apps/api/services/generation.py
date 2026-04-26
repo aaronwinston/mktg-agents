@@ -109,7 +109,7 @@ async def stream_chat(
         full_response = ""
 
         with client.messages.stream(
-            model="claude-opus-4-5",
+            model=settings.MODEL_GENERATION,
             max_tokens=4096,
             system=system,
             messages=messages,
@@ -156,7 +156,7 @@ Generate a structured brief in markdown format with these sections:
 - **Success Criteria**: How we'll know this worked
 """
         response = client.messages.create(
-            model="claude-opus-4-5",
+            model=settings.MODEL_GENERATION,
             max_tokens=2048,
             system=system + "\n\n" + brief_instruction,
             messages=[{"role": "user", "content": user_prompt}],

@@ -66,7 +66,7 @@ async def run_agent_chain(
         
         agent_output = ""
         with client.messages.stream(
-            model="claude-sonnet-4-5",
+            model=settings.MODEL_GENERATION,
             max_tokens=4000,
             system=system_prompt,
             messages=messages,

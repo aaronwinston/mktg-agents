@@ -35,7 +35,7 @@ def score_item(title: str, body: str, source: str) -> tuple[float, str]:
     scoring_prompt = load_scoring_prompt()
     try:
         response = client.messages.create(
-            model="claude-haiku-4-5",
+            model=settings.MODEL_SCORING,
             max_tokens=150,
             system=scoring_prompt,
             messages=[{

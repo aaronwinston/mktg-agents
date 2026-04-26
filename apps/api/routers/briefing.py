@@ -116,7 +116,7 @@ Stories:
 {raw_text}"""
     
     response = client.messages.create(
-        model="claude-sonnet-4-5",
+        model=settings.MODEL_GENERATION,
         max_tokens=2000,
         messages=[{"role": "user", "content": prompt}]
     )
