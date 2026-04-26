@@ -1,0 +1,432 @@
+<svg width="1400" height="800" viewBox="0 0 1400 800" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Brand gradient: purple → blue → cyan (diagonal) -->
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#8A2BE2"/>
+      <stop offset="55%"  stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#00D4FF"/>
+    </linearGradient>
+    <!-- Brand gradient horizontal (for text fill) -->
+    <linearGradient id="brandGradH" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#8A2BE2"/>
+      <stop offset="100%" stop-color="#3B82F6"/>
+    </linearGradient>
+    <!-- Progress bar gradient -->
+    <linearGradient id="progressGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#8A2BE2"/>
+      <stop offset="100%" stop-color="#3B82F6"/>
+    </linearGradient>
+    <!-- Dark background gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%"   stop-color="#09090f"/>
+      <stop offset="100%" stop-color="#0c0c18"/>
+    </linearGradient>
+    <!-- Purple top glow -->
+    <radialGradient id="topGlow" cx="50%" cy="0%" r="80%">
+      <stop offset="0%"   stop-color="#4a1080" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#09090f" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Active nav item fill -->
+    <linearGradient id="activeNavBg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#8A2BE2" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#8A2BE2" stop-opacity="0.04"/>
+    </linearGradient>
+    <!-- Dot grid pattern -->
+    <pattern id="dotGrid" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="14" cy="14" r="0.9" fill="white" fill-opacity="0.055"/>
+    </pattern>
+    <!-- Clip browser interior -->
+    <clipPath id="browserClip">
+      <rect x="50" y="204" width="1300" height="586" rx="0"/>
+    </clipPath>
+  </defs>
+
+  <!-- ══════════════════════════════════════════
+       BACKGROUND
+  ══════════════════════════════════════════ -->
+  <rect width="1400" height="800" fill="url(#bgGrad)"/>
+  <rect width="1400" height="800" fill="url(#dotGrid)"/>
+  <rect width="1400" height="360" fill="url(#topGlow)"/>
+
+  <!-- ══════════════════════════════════════════
+       TOP SECTION — LOGO + WORDMARK + TAGLINE
+       y: 0–168
+  ══════════════════════════════════════════ -->
+
+  <!-- Hexagon icon: pointy-top, center (605, 68), radius=45 -->
+  <!-- Vertices: top, top-right, bottom-right, bottom, bottom-left, top-left -->
+  <!-- sin60=0.866, cos60=0.5 -->
+  <!-- top: (605, 23), tr: (605+39,68-22.5)=(644,45.5), br: (644,90.5) -->
+  <!-- bottom: (605,113), bl: (566,90.5), tl: (566,45.5)              -->
+  <polygon points="605,23 644,45.5 644,90.5 605,113 566,90.5 566,45.5"
+           fill="url(#brandGrad)"/>
+  <!-- Inner hex shadow for depth, radius=31 -->
+  <polygon points="605,37 632,52.5 632,83.5 605,99 578,83.5 578,52.5"
+           fill="#09090f" fill-opacity="0.20"/>
+  <!-- F letterform -->
+  <text x="605" y="89" text-anchor="middle"
+        font-family="'Arial Black', 'Arial Bold', Arial, sans-serif"
+        font-weight="900" font-size="48" fill="white">F</text>
+
+  <!-- "Forge" — white -->
+  <text x="660" y="96"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-weight="700" font-size="44" fill="white" letter-spacing="-1.5">Forge</text>
+  <!-- "OS" — gradient fill -->
+  <text x="782" y="96"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-weight="700" font-size="44" fill="url(#brandGradH)" letter-spacing="-1.5">OS</text>
+
+  <!-- Tagline -->
+  <text x="700" y="133" text-anchor="middle"
+        font-family="-apple-system, 'Helvetica Neue', Arial, sans-serif"
+        font-size="15" fill="#6b6b80" letter-spacing="0.4">
+    AI-native editorial and marketing operating system
+  </text>
+
+  <!-- Feature pills -->
+  <!-- Pill 1: 11 AI Agents -->
+  <rect x="464" y="146" width="118" height="22" rx="11"
+        fill="#8A2BE2" fill-opacity="0.18"/>
+  <rect x="464" y="146" width="118" height="22" rx="11"
+        fill="none" stroke="#8A2BE2" stroke-opacity="0.5" stroke-width="1"/>
+  <text x="523" y="161" text-anchor="middle"
+        font-family="Arial, sans-serif" font-size="10.5" font-weight="600" fill="#b07ef0">
+    11 AI Agents
+  </text>
+
+  <!-- Pill 2: Live Briefing Feed -->
+  <rect x="594" y="146" width="148" height="22" rx="11"
+        fill="#3B82F6" fill-opacity="0.15"/>
+  <rect x="594" y="146" width="148" height="22" rx="11"
+        fill="none" stroke="#3B82F6" stroke-opacity="0.45" stroke-width="1"/>
+  <text x="668" y="161" text-anchor="middle"
+        font-family="Arial, sans-serif" font-size="10.5" font-weight="600" fill="#60a5fa">
+    Live Briefing Feed
+  </text>
+
+  <!-- Pill 3: Local-first -->
+  <rect x="754" y="146" width="110" height="22" rx="11"
+        fill="#059669" fill-opacity="0.16"/>
+  <rect x="754" y="146" width="110" height="22" rx="11"
+        fill="none" stroke="#059669" stroke-opacity="0.45" stroke-width="1"/>
+  <text x="809" y="161" text-anchor="middle"
+        font-family="Arial, sans-serif" font-size="10.5" font-weight="600" fill="#34d399">
+    Local-first
+  </text>
+
+  <!-- ══════════════════════════════════════════
+       BROWSER FRAME
+       x=50, y=170, w=1300, h=620, rx=12
+  ══════════════════════════════════════════ -->
+
+  <!-- Drop shadow (simulated via offset rect) -->
+  <rect x="56" y="178" width="1296" height="612" rx="11"
+        fill="black" fill-opacity="0.32"/>
+
+  <!-- Browser window -->
+  <rect x="50" y="170" width="1300" height="620" rx="12"
+        fill="#1d1d28" stroke="#2e2e42" stroke-width="1"/>
+
+  <!-- Chrome bar: y=170..204, h=34 -->
+  <rect x="50" y="170" width="1300" height="34" fill="#252535"/>
+  <!-- Square off bottom of chrome -->
+  <rect x="50" y="190" width="1300" height="14" fill="#252535"/>
+
+  <!-- Traffic lights -->
+  <circle cx="84"  cy="187" r="6" fill="#ff5f57"/>
+  <circle cx="106" cy="187" r="6" fill="#febc2e"/>
+  <circle cx="128" cy="187" r="6" fill="#28c840"/>
+
+  <!-- URL bar -->
+  <rect x="488" y="177" width="424" height="20" rx="10" fill="#18181f"/>
+  <text x="700" y="191" text-anchor="middle"
+        font-family="'Courier New', monospace, Arial"
+        font-size="11" fill="#55556a">localhost:3000/dashboard</text>
+
+  <!-- ══════════════════════════════════════════
+       APP UI (y=204..790)
+       Full light background
+  ══════════════════════════════════════════ -->
+  <rect x="50" y="204" width="1300" height="586" fill="#fafafa"/>
+
+  <!-- ─────────────────────────────────────────
+       SIDEBAR  x=50..235, w=185
+  ───────────────────────────────────────── -->
+  <rect x="50"  y="204" width="185" height="586" fill="#ffffff"/>
+  <line x1="235" y1="204" x2="235" y2="790" stroke="#e8e8e8" stroke-width="1"/>
+
+  <!-- Sidebar header y=204..262 -->
+  <rect x="50" y="204" width="185" height="58" fill="#ffffff"/>
+  <line x1="50" y1="262" x2="235" y2="262" stroke="#e8e8e8" stroke-width="1"/>
+
+  <!-- Mini hex, center (76,233), radius=14 -->
+  <polygon points="76,219 88,226 88,240 76,247 64,240 64,226" fill="url(#brandGrad)"/>
+  <text x="76" y="241" text-anchor="middle"
+        font-family="'Arial Black', Arial" font-weight="900" font-size="13" fill="white">F</text>
+  <text x="96"  y="237" font-family="Georgia, serif" font-weight="700" font-size="14" fill="#1a1a1a">Forge</text>
+  <text x="133" y="237" font-family="Georgia, serif" font-weight="700" font-size="14" fill="#8A2BE2">OS</text>
+
+  <!-- Nav: Dashboard (active) -->
+  <rect x="58" y="270" width="169" height="36" rx="6" fill="url(#activeNavBg)"/>
+  <rect x="58" y="270" width="3"   height="36" rx="1.5" fill="#8A2BE2"/>
+  <text x="77" y="293" font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="#8A2BE2">Dashboard</text>
+
+  <!-- Nav: Sessions -->
+  <text x="77" y="330" font-family="Arial, sans-serif" font-size="12" fill="#888">Sessions</text>
+  <!-- Nav: Projects -->
+  <text x="77" y="364" font-family="Arial, sans-serif" font-size="12" fill="#888">Projects</text>
+  <!-- Nav: Intelligence -->
+  <text x="77" y="398" font-family="Arial, sans-serif" font-size="12" fill="#888">Intelligence</text>
+  <!-- Nav: Settings -->
+  <text x="77" y="432" font-family="Arial, sans-serif" font-size="12" fill="#888">Settings</text>
+
+  <!-- Divider -->
+  <line x1="58" y1="450" x2="227" y2="450" stroke="#eeeeee" stroke-width="1"/>
+  <text x="65" y="468" font-family="Arial, sans-serif" font-size="9.5" font-weight="600"
+        fill="#bbbbbb" letter-spacing="0.9">PROJECTS</text>
+
+  <text x="72" y="490" font-family="Arial, sans-serif" font-size="11" fill="#aaaaaa">Phoenix 5.0 Launch</text>
+  <text x="72" y="510" font-family="Arial, sans-serif" font-size="11" fill="#aaaaaa">Arize AI Blog</text>
+  <text x="72" y="530" font-family="Arial, sans-serif" font-size="11" fill="#aaaaaa">Case Studies 2026</text>
+  <text x="72" y="552" font-family="Arial, sans-serif" font-size="11" fill="#8A2BE2">+ New project</text>
+
+  <!-- ─────────────────────────────────────────
+       MAIN CONTENT AREA  x=235..1055, w=820
+       Content padding-left=40 → x=275
+  ───────────────────────────────────────── -->
+
+  <!-- Quote callout (y=216..252) -->
+  <rect x="275" y="218" width="3" height="34" rx="1.5" fill="#8A2BE2"/>
+  <text x="286" y="234" font-family="Georgia, 'Times New Roman', serif"
+        font-size="13" font-style="italic" fill="#777777">
+    &#x201C;You can&#x2019;t really be strong until you can see a funny side to things.&#x201D;
+  </text>
+  <text x="286" y="251" font-family="Arial, sans-serif"
+        font-size="11" font-weight="600" fill="#8A2BE2">&#x2014; Ken Kesey</text>
+
+  <!-- Hero heading -->
+  <text x="275" y="285" font-family="Georgia, 'Times New Roman', serif"
+        font-weight="700" font-size="27" fill="#1a1a1a" letter-spacing="-0.5">
+    Hi, aaron. What markets should we move today?
+  </text>
+  <text x="275" y="308" font-family="Arial, sans-serif" font-size="13" fill="#aaaaaa">
+    1 session active
+  </text>
+
+  <!-- New Session button -->
+  <rect x="275" y="320" width="128" height="34" rx="8" fill="url(#brandGrad)"/>
+  <text x="339" y="341" text-anchor="middle"
+        font-family="Arial, sans-serif" font-size="13" font-weight="600" fill="white">
+    + New Session
+  </text>
+
+  <!-- Briefing Book header -->
+  <text x="275" y="385" font-family="Georgia, serif" font-weight="600"
+        font-size="18" fill="#1a1a1a">Briefing Book</text>
+  <text x="275" y="402" font-family="Arial, sans-serif" font-size="11" fill="#bbbbbb">
+    Last refreshed 2:47 PM
+  </text>
+
+  <!-- Refresh button -->
+  <rect x="916" y="374" width="132" height="28" rx="6"
+        fill="#ffffff" stroke="#e5e5e5" stroke-width="1"/>
+  <text x="982" y="392" text-anchor="middle"
+        font-family="Arial, sans-serif" font-size="11" font-weight="600" fill="#666666">
+    Refresh briefing &#x21BB;
+  </text>
+
+  <!-- ── STORY CARDS (y=412..535) ── -->
+  <!-- 3 cards, each 238px wide, 12px gaps, starts at x=275 -->
+
+  <!-- CARD 1: Hacker News (x=275..513) -->
+  <rect x="275" y="412" width="238" height="122" rx="8"
+        fill="#ffffff" stroke="#e8e8e8" stroke-width="1"/>
+  <rect x="289" y="426" width="78" height="18" rx="9" fill="#FF6600"/>
+  <text x="328" y="439" text-anchor="middle"
+        font-family="Arial, sans-serif" font-size="9.5" font-weight="700" fill="white">HackerNews</text>
+  <text x="375" y="439" font-family="Arial, sans-serif"
+        font-size="9.5" font-weight="700" fill="#059669">&#x25B2; Trending</text>
+  <text x="289" y="457" font-family="Arial, sans-serif"
+        font-size="12" font-weight="600" fill="#1a1a1a">Building production-grade</text>
+  <text x="289" y="473" font-family="Arial, sans-serif"
+        font-size="12" font-weight="600" fill="#1a1a1a">multi-agent systems</text>
+  <text x="289" y="491" font-family="Arial, sans-serif" font-size="11" fill="#888888">Strong angle for developer</text>
+  <text x="289" y="507" font-family="Arial, sans-serif" font-size="11" fill="#888888">thought leadership content</text>
+  <line x1="289" y1="517" x2="501" y2="517" stroke="#f2f2f2" stroke-width="1"/>
+  <text x="289" y="530" font-family="Arial, sans-serif" font-size="10" fill="#cccccc">3,100 points</text>
+
+  <!-- CARD 2: GitHub (x=525..763) -->
+  <rect x="525" y="412" width="238" height="122" rx="8"
+        fill="#ffffff" stroke="#e8e8e8" stroke-width="1"/>
+  <rect x="539" y="426" width="52" height="18" rx="9" fill="#24292e"/>
+  <text x="565" y="439" text-anchor="middle"
+        font-family="Arial, sans-serif" font-size="9.5" font-weight="700" fill="white">GitHub</text>
+  <text x="600" y="439" font-family="Arial, sans-serif"
+        font-size="9.5" font-weight="700" fill="#059669">&#x25B2; Trending</text>
+  <text x="539" y="457" font-family="Arial, sans-serif"
+        font-size="12" font-weight="600" fill="#1a1a1a">Agent observability framework</text>
+  <text x="539" y="473" font-family="Arial, sans-serif"
+        font-size="12" font-weight="600" fill="#1a1a1a">for production LLM apps</text>
+  <text x="539" y="491" font-family="Arial, sans-serif" font-size="11" fill="#888888">Direct content angle for</text>
+  <text x="539" y="507" font-family="Arial, sans-serif" font-size="11" fill="#888888">developer-focused audience</text>
+  <line x1="539" y1="517" x2="751" y2="517" stroke="#f2f2f2" stroke-width="1"/>
+  <text x="539" y="530" font-family="Arial, sans-serif" font-size="10" fill="#cccccc">1,840 stars</text>
+
+  <!-- CARD 3: ArXiv (x=775..1013) -->
+  <rect x="775" y="412" width="238" height="122" rx="8"
+        fill="#ffffff" stroke="#e8e8e8" stroke-width="1"/>
+  <rect x="789" y="426" width="44" height="18" rx="9" fill="#B31B1B"/>
+  <text x="811" y="439" text-anchor="middle"
+        font-family="Arial, sans-serif" font-size="9.5" font-weight="700" fill="white">ArXiv</text>
+  <text x="789" y="457" font-family="Arial, sans-serif"
+        font-size="12" font-weight="600" fill="#1a1a1a">Multi-agent reasoning with</text>
+  <text x="789" y="473" font-family="Arial, sans-serif"
+        font-size="12" font-weight="600" fill="#1a1a1a">emergent planning</text>
+  <text x="789" y="491" font-family="Arial, sans-serif" font-size="11" fill="#888888">Research-led angle for</text>
+  <text x="789" y="507" font-family="Arial, sans-serif" font-size="11" fill="#888888">technical thought leadership</text>
+  <line x1="789" y1="517" x2="1001" y2="517" stroke="#f2f2f2" stroke-width="1"/>
+  <text x="789" y="530" font-family="Arial, sans-serif" font-size="10" fill="#cccccc">ArXiv preprint</text>
+
+  <!-- ── ACTIVE SESSIONS ── -->
+  <text x="275" y="562" font-family="Georgia, serif" font-weight="600"
+        font-size="16" fill="#1a1a1a">Active Sessions</text>
+
+  <!-- Session row 1 -->
+  <rect x="275" y="572" width="770" height="52" rx="8"
+        fill="#ffffff" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="293" y="593" font-family="Arial, sans-serif"
+        font-size="13" font-weight="600" fill="#1a1a1a">Phoenix 5.0 launch blog</text>
+  <text x="293" y="611" font-family="Arial, sans-serif" font-size="11" fill="#aaaaaa">Agent: dev-copywriter</text>
+  <!-- Active badge -->
+  <rect x="896" y="583" width="62" height="22" rx="11" fill="#FEF3C7"/>
+  <text x="927" y="598" text-anchor="middle"
+        font-family="Arial, sans-serif" font-size="11" font-weight="600" fill="#d97706">&#x25CF; Active</text>
+  <!-- Progress text + bar -->
+  <text x="972" y="591" font-family="Arial, sans-serif" font-size="11" fill="#aaaaaa">65%</text>
+  <rect x="972" y="598" width="60" height="4" rx="2" fill="#f0f0f0"/>
+  <rect x="972" y="598" width="39" height="4" rx="2" fill="url(#progressGrad)"/>
+
+  <!-- Session row 2 -->
+  <rect x="275" y="632" width="770" height="48" rx="8"
+        fill="#ffffff" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="293" y="652" font-family="Arial, sans-serif"
+        font-size="13" font-weight="600" fill="#1a1a1a">AI observability explainer</text>
+  <text x="293" y="669" font-family="Arial, sans-serif" font-size="11" fill="#aaaaaa">content-ops-manager</text>
+  <!-- Complete badge -->
+  <rect x="896" y="643" width="68" height="22" rx="11" fill="#D1FAE5"/>
+  <text x="930" y="658" text-anchor="middle"
+        font-family="Arial, sans-serif" font-size="11" font-weight="600" fill="#059669">&#x2713; Done</text>
+  <!-- Full progress bar -->
+  <rect x="972" y="655" width="60" height="4" rx="2" fill="url(#progressGrad)"/>
+
+  <!-- Q2 newsletter row -->
+  <rect x="275" y="688" width="770" height="48" rx="8"
+        fill="#ffffff" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="293" y="708" font-family="Arial, sans-serif"
+        font-size="13" font-weight="600" fill="#1a1a1a">Q2 newsletter</text>
+  <text x="293" y="726" font-family="Arial, sans-serif" font-size="11" fill="#aaaaaa">email &middot; subscribers</text>
+  <!-- Pending badge -->
+  <rect x="896" y="699" width="66" height="22" rx="11" fill="#F3F4F6"/>
+  <text x="929" y="714" text-anchor="middle"
+        font-family="Arial, sans-serif" font-size="11" font-weight="600" fill="#9ca3af">Pending</text>
+  <!-- Empty bar -->
+  <rect x="972" y="711" width="60" height="4" rx="2" fill="#f0f0f0"/>
+
+  <!-- ─────────────────────────────────────────
+       AGENT TRACKER  x=1055..1350, w=295
+  ───────────────────────────────────────── -->
+  <rect x="1055" y="204" width="295" height="586" fill="#ffffff"/>
+  <line x1="1055" y1="204" x2="1055" y2="790" stroke="#e8e8e8" stroke-width="1"/>
+
+  <!-- Tracker header -->
+  <line x1="1055" y1="262" x2="1350" y2="262" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="1075" y="230" font-family="Georgia, serif" font-weight="600"
+        font-size="14.5" fill="#1a1a1a">Agent Team</text>
+  <text x="1075" y="250" font-family="Arial, sans-serif" font-size="10.5" fill="#aaaaaa">Phoenix 5.0 Launch Session</text>
+
+  <!-- ── AGENT ROWS ── -->
+
+  <!-- Agent 1: editorial-director — DONE -->
+  <line x1="1055" y1="318" x2="1350" y2="318" stroke="#f5f5f5" stroke-width="1"/>
+  <circle cx="1073" cy="282" r="5" fill="#059669"/>
+  <text x="1087" y="278" font-family="Arial, sans-serif"
+        font-size="11" font-weight="600" fill="#999999">editorial-director</text>
+  <text x="1087" y="294" font-family="Arial, sans-serif" font-size="10.5" fill="#cccccc">Strategy &amp; direction</text>
+  <rect x="1087" y="303" width="248" height="3" rx="1.5" fill="url(#progressGrad)" fill-opacity="0.5"/>
+  <text x="1336" y="294" text-anchor="end"
+        font-family="Arial, sans-serif" font-size="10" fill="#059669">&#x2713;</text>
+
+  <!-- Agent 2: ai-researcher — DONE -->
+  <line x1="1055" y1="374" x2="1350" y2="374" stroke="#f5f5f5" stroke-width="1"/>
+  <circle cx="1073" cy="338" r="5" fill="#059669"/>
+  <text x="1087" y="334" font-family="Arial, sans-serif"
+        font-size="11" font-weight="600" fill="#999999">ai-researcher</text>
+  <text x="1087" y="350" font-family="Arial, sans-serif" font-size="10.5" fill="#cccccc">Research &amp; sources</text>
+  <rect x="1087" y="359" width="248" height="3" rx="1.5" fill="url(#progressGrad)" fill-opacity="0.5"/>
+  <text x="1336" y="350" text-anchor="end"
+        font-family="Arial, sans-serif" font-size="10" fill="#059669">&#x2713;</text>
+
+  <!-- Agent 3: dev-copywriter — ACTIVE -->
+  <rect x="1055" y="374" width="295" height="62" fill="#FFFBF5"/>
+  <line x1="1055" y1="436" x2="1350" y2="436" stroke="#f0e6d0" stroke-width="1"/>
+  <circle cx="1073" cy="398" r="5" fill="#d97706"/>
+  <text x="1087" y="394" font-family="Arial, sans-serif"
+        font-size="11" font-weight="600" fill="#1a1a1a">dev-copywriter</text>
+  <text x="1087" y="410" font-family="Arial, sans-serif"
+        font-size="10.5" fill="#d97706">Writing draft&#x2026;</text>
+  <rect x="1087" y="421" width="248" height="3" rx="1.5" fill="#eedfc0"/>
+  <rect x="1087" y="421" width="161" height="3" rx="1.5" fill="url(#progressGrad)"/>
+  <text x="1336" y="410" text-anchor="end"
+        font-family="Arial, sans-serif" font-size="10" fill="#d97706">65%</text>
+
+  <!-- Agent 4: dev-reviewer — pending -->
+  <line x1="1055" y1="492" x2="1350" y2="492" stroke="#f5f5f5" stroke-width="1"/>
+  <circle cx="1073" cy="456" r="5" fill="#e5e5e5"/>
+  <text x="1087" y="452" font-family="Arial, sans-serif"
+        font-size="11" font-weight="600" fill="#cccccc">dev-reviewer</text>
+  <text x="1087" y="468" font-family="Arial, sans-serif" font-size="10.5" fill="#dddddd">Copy review &amp; polish</text>
+  <rect x="1087" y="477" width="248" height="3" rx="1.5" fill="#f5f5f5"/>
+
+  <!-- Agent 5: technical-fact-checker — idle -->
+  <line x1="1055" y1="546" x2="1350" y2="546" stroke="#f5f5f5" stroke-width="1"/>
+  <circle cx="1073" cy="510" r="5" fill="#e5e5e5"/>
+  <text x="1087" y="506" font-family="Arial, sans-serif"
+        font-size="11" font-weight="600" fill="#cccccc">technical-fact-checker</text>
+  <text x="1087" y="522" font-family="Arial, sans-serif" font-size="10.5" fill="#dddddd">Technical accuracy</text>
+  <rect x="1087" y="531" width="248" height="3" rx="1.5" fill="#f5f5f5"/>
+
+  <!-- Agent 6: seo-strategist — idle -->
+  <line x1="1055" y1="592" x2="1350" y2="592" stroke="#f5f5f5" stroke-width="1"/>
+  <circle cx="1073" cy="562" r="5" fill="#e5e5e5"/>
+  <text x="1087" y="558" font-family="Arial, sans-serif"
+        font-size="11" font-weight="600" fill="#cccccc">seo-strategist</text>
+  <text x="1087" y="574" font-family="Arial, sans-serif" font-size="10.5" fill="#dddddd">SEO optimization</text>
+  <rect x="1087" y="582" width="248" height="3" rx="1.5" fill="#f5f5f5"/>
+
+  <!-- More agents indicator -->
+  <text x="1202" y="624" text-anchor="middle"
+        font-family="Arial, sans-serif" font-size="12" fill="#cccccc">
+    &#x00B7; &#x00B7; &#x00B7;  5 more agents
+  </text>
+
+  <!-- Progress footer -->
+  <line x1="1055" y1="656" x2="1350" y2="656" stroke="#e8e8e8" stroke-width="1"/>
+  <rect x="1055" y="656" width="295" height="134" fill="#fafafa"/>
+  <text x="1075" y="678" font-family="Arial, sans-serif" font-size="11" fill="#aaaaaa">Overall progress</text>
+  <text x="1335" y="678" text-anchor="end"
+        font-family="Arial, sans-serif" font-size="11" fill="#aaaaaa">65%</text>
+  <rect x="1075" y="687" width="260" height="6" rx="3" fill="#eeeeee"/>
+  <rect x="1075" y="687" width="169" height="6" rx="3" fill="url(#progressGrad)"/>
+
+  <!-- "Run Chain" button -->
+  <rect x="1075" y="706" width="120" height="32" rx="7" fill="url(#brandGrad)"/>
+  <text x="1135" y="726" text-anchor="middle"
+        font-family="Arial, sans-serif" font-size="12" font-weight="600" fill="white">Run Chain</text>
+
+  <!-- ══════════════════════════════════════════
+       BOTTOM CHROME LINE (browser frame close)
+  ══════════════════════════════════════════ -->
+  <rect x="50" y="788" width="1300" height="2" rx="0" fill="#e8e8e8" fill-opacity="0.15"/>
+
+</svg>

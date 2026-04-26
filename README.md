@@ -1,5 +1,7 @@
 # ForgeOS
 
+![ForgeOS — AI-native editorial and marketing operating system](assets/hero.svg)
+
 **An AI-native editorial and marketing operating system.**
 
 Most AI writing tools give you a chat box. ForgeOS gives you an editorial team — a sequenced chain of specialized agents that take a brief and run it through research, drafting, review, fact-checking, SEO, legal risk, and distribution planning before handing you a finished document.
