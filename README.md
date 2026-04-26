@@ -1,16 +1,30 @@
-Brought to you by LLMs and espresso. Buyer beware. 
+# ForgeOS
 
-# mktg-agents
+*Brought to you by LLMs and espresso. Buyer beware.*
 
-`mktg-agents` is an AI-native editorial, content, communications, analyst relations, and developer marketing operating system.
+Most AI content tools give you a blank prompt and wish you luck.
+ForgeOS is different. It's a structured system of specialized agents
+that work the way a high-performing editorial team works — with a
+defined editorial philosophy, a quality bar, a claims policy, and
+a clear chain of responsibility from brief to published asset.
 
-It is designed for teams building technical content for developers, engineering leaders, AI builders, and enterprise buyers.
+You are the editorial director. The agents execute your direction.
 
 ---
 
-## What this repo is for
+## What this is
 
-Use this repository to produce:
+ForgeOS is an AI-native editorial operating system for teams building
+technical content for developers, engineering leaders, AI builders,
+and enterprise buyers.
+
+It produces work that sounds like it came from someone with judgment —
+because the judgment is encoded into the system before the agents
+touch anything.
+
+---
+
+## What it produces
 
 - Developer blog posts and technical explainers
 - Product launch copy
@@ -27,11 +41,17 @@ Use this repository to produce:
 
 ---
 
-## What this repo is not
+## What it is not
 
-This is not a generic content bot. This is not a prompt dump. This is not a replacement for product, engineering, legal, comms, or customer approval.
+This is not a generic content bot.
+This is not a prompt dump.
+This is not a replacement for product, engineering, legal, comms,
+or customer approval.
 
-This repo is a structured system of specialized agents that work like a high-performing editorial team.
+It is a structured system of specialized agents that work like a
+high-performing editorial team. The difference between this and
+a chatbot is the same as the difference between a newsroom and
+a vending machine.
 
 ---
 
