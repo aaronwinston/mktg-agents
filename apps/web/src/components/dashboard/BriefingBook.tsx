@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { getBriefing, refreshBriefing } from '@/lib/api';
+import { getBriefing, refreshBriefing, checkHealth } from '@/lib/api';
 import type { Story } from '@/lib/api';
 import { StoryCard } from './StoryCard';
 import { SkeletonCard } from '@/components/ui/SkeletonCard';
@@ -18,14 +18,26 @@ export function BriefingBook() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [offline, setOffline] = useState(false);
+  const [offlineMessage, setOfflineMessage] = useState('Start the local API to load your briefing feed.');
   const [refreshedAt, setRefreshedAt] = useState<number | null>(null);
   
   const load = useCallback(async () => {
     setLoading(true);
     const result = await getBriefing();
     setLoading(false);
-    if (result.error === 'API_UNAVAILABLE' || (result.stories.length === 0 && result.error)) {
-      setOffline(true);
+    if (result.error === 'API_UNAVAILABLE') {
+      const health = await checkHealth();
+      if (!health.ok) {
+        setOffline(true);
+        setOfflineMessage('Start the local API on port 8000 to load your briefing feed.');
+      } else if (result.stories.length === 0) {
+        setOffline(true);
+        setOfflineMessage('No briefing items yet. Try refreshing.');
+      } else {
+        setOffline(false);
+        setStories(result.stories);
+        setRefreshedAt(result.refreshed_at);
+      }
     } else {
       setOffline(false);
       setStories(result.stories);
@@ -68,7 +80,7 @@ export function BriefingBook() {
       </div>
       
       {offline ? (
-        <OfflineState />
+        <OfflineState message={offlineMessage} />
       ) : loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}

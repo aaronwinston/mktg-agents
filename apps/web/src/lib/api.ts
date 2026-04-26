@@ -65,6 +65,15 @@ export function isApiError(val: unknown): val is ApiError {
   return typeof val === 'object' && val !== null && 'error' in val;
 }
 
+export async function checkHealth(): Promise<{ ok: boolean; reason?: string }> {
+  try {
+    const resp = await fetch(`${API_BASE}/api/health`, { method: 'GET' });
+    return { ok: resp.ok };
+  } catch (err) {
+    return { ok: false, reason: 'api-unreachable' };
+  }
+}
+
 export async function getSessions(): Promise<Session[]> {
   const result = await apiFetch<Session[]>('/api/sessions');
   if (isApiError(result)) return [];
