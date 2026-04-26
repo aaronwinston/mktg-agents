@@ -23,6 +23,8 @@ app.include_router(chat.router)
 app.include_router(intelligence.router)
 app.include_router(settings.router)
 app.include_router(files.router)
+app.include_router(sessions.router)
+app.include_router(briefing.router)
 
 scheduler = AsyncIOScheduler()
 
