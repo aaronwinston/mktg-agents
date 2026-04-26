@@ -1,11 +1,13 @@
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Optional
 import anthropic
+from datetime import datetime
 from config import settings
 from services.file_engine import (
     load_skill, load_playbook, load_core_doc, load_context_layer,
     REPO_ROOT
 )
 from instrumentation import get_tracer
+from sqlmodel import Session
 
 client = anthropic.Anthropic(api_key=settings.ANTHROPIC_API_KEY)
 
@@ -172,6 +174,8 @@ async def execute_playbook(
     brief_md: str,
     playbook_name: str,
     toggles: dict = None,
+    pipeline_run_id: Optional[int] = None,
+    db_session: Optional[Session] = None,
 ) -> AsyncGenerator[str, None]:
     tracer = get_tracer()
     span = tracer.start_span("execute_playbook") if tracer else None
@@ -201,6 +205,8 @@ async def execute_playbook(
         agent_chain = ["editorial-director", "ai-researcher", "dev-copywriter", "dev-reviewer"]
         
         for agent_name in agent_chain:
+            step_started_at = datetime.utcnow()
+            
             agent_prompt = f"""## Content Brief
 
 {brief_md}
@@ -222,6 +228,22 @@ Return the improved version."""
                 yield chunk
 
             draft = agent_output
+            
+            # Persist to pipeline_step table if database session is available
+            if pipeline_run_id and db_session:
+                from models import PipelineStep
+                
+                step = PipelineStep(
+                    pipeline_run_id=pipeline_run_id,
+                    agent_name=agent_name,
+                    input_text=agent_prompt,
+                    output_text=agent_output,
+                    started_at=step_started_at,
+                    completed_at=datetime.utcnow(),
+                    tokens_used=None
+                )
+                db_session.add(step)
+                db_session.commit()
 
         if span:
             span.set_attribute("output.value", draft[:2000])
