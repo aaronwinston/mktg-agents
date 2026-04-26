@@ -59,10 +59,14 @@ class ScrapeItem(SQLModel, table=True):
     body: Optional[str] = None
     author: Optional[str] = None
     published_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
     fetched_at: datetime = Field(default_factory=datetime.utcnow)
     raw_json: Optional[str] = None
+    score: Optional[float] = Field(default=None)
     score_relevance: Optional[float] = None
     score_reasoning: Optional[str] = None
+    why_relevant: Optional[str] = None
+    content_angle: Optional[str] = None
     surfaced_to_user_at: Optional[datetime] = None
     dismissed_at: Optional[datetime] = None
 
