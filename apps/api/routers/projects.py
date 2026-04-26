@@ -157,3 +157,10 @@ def get_brief(brief_id: int, session: Session = Depends(get_session)):
 @router.get("/projects/{project_id}/briefs")
 def list_project_briefs(project_id: int, session: Session = Depends(get_session)):
     return session.exec(select(Brief).where(Brief.project_id == project_id)).all()
+
+@router.get("/deliverables/{deliverable_id}/brief")
+def get_deliverable_brief(deliverable_id: int, session: Session = Depends(get_session)):
+    b = session.exec(select(Brief).where(Brief.deliverable_id == deliverable_id)).first()
+    if not b:
+        return None
+    return b
