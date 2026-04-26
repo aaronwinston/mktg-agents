@@ -195,25 +195,36 @@ async def execute_playbook(
         if skill_text:
             system += f"\n\n---\n\n{skill_text}"
 
-        prompt = f"""## Content Brief
+        draft = brief_md
+        
+        # Parse agent chain from playbook content or use defaults
+        agent_chain = ["editorial-director", "ai-researcher", "dev-copywriter", "dev-reviewer"]
+        
+        for agent_name in agent_chain:
+            agent_prompt = f"""## Content Brief
 
 {brief_md}
 
-## Instructions
+## Previous Draft
 
-Execute this playbook end-to-end. Work through each skill in the chain sequentially.
-For each step, briefly note which skill you're applying, then produce the output.
-Deliver the final draft as a complete, publish-ready document in markdown.
-"""
-        messages = [{"role": "user", "content": prompt}]
-        full_response = ""
+{draft}
 
-        async for chunk in stream_chat(messages, toggles=toggles):
-            full_response += chunk
-            yield chunk
+## Your Task
+
+You are the {agent_name}. Review the previous draft against the brief and apply your expertise to improve it.
+Return the improved version."""
+            
+            messages = [{"role": "user", "content": agent_prompt}]
+            agent_output = ""
+
+            async for chunk in stream_chat(messages, toggles=toggles):
+                agent_output += chunk
+                yield chunk
+
+            draft = agent_output
 
         if span:
-            span.set_attribute("output.value", full_response[:2000])
+            span.set_attribute("output.value", draft[:2000])
     except Exception:
         raise
     finally:
