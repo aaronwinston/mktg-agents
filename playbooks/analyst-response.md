@@ -29,7 +29,7 @@ analyst material
 ### 1. Competitive intelligence (always run this)
 Use `skills/specialization/competitive-intelligence/SKILL.md`.
 Analysts hear from your competitors constantly. Map what they're likely being told, where Arize's narrative differs, and what gaps exist.
-Check `context/competitive/` — this is where analyst response quality lives or dies.
+Check `context/02_narrative/competitive-pov.md` — this is where analyst response quality lives or dies.
 Output: analyst's likely competitive frame, Arize's differentiated position point by point, narrative gaps to address, recommended talking points.
 
 ### 2. PMM positioning

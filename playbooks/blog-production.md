@@ -34,7 +34,7 @@ blog brief
 
 ### 1. Competitive scan
 Use `skills/specialization/competitive-intelligence/SKILL.md`.
-Check `context/competitive/` for relevant research. If competitive surface area is low or none, note it and proceed — do not slow down low-stakes content.
+Check `context/02_narrative/competitive-pov.md` for relevant research. If competitive surface area is low or none, note it and proceed — do not slow down low-stakes content.
 Output: competitive surface area rating, any framing flags, land mines to avoid (if applicable).
 
 ### 2. Editorial direction

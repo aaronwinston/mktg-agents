@@ -109,7 +109,7 @@ Do not wait to be asked. Invoke `skills/specialization/competitive-intelligence`
 - Thought leadership or founder POV content
 - SEO keywords that competitors are likely targeting
 
-Check `context/competitive/` for available research. If the folder is empty or has nothing relevant, note it and proceed — but flag that competitive context is missing.
+Check `context/02_narrative/competitive-pov.md` for available research. If the file is empty or has nothing relevant, note it and proceed — but flag that competitive context is missing.
 
 ---
 

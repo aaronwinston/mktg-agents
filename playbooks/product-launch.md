@@ -32,7 +32,7 @@ launch brief
 
 ### 1. Competitive scan
 Use `skills/specialization/competitive-intelligence/SKILL.md`.
-Before any strategy or writing begins, check `context/competitive/` for relevant research.
+Before any strategy or writing begins, check `context/02_narrative/competitive-pov.md` for relevant research.
 Output must include: competitive surface area rating, relevant competitor narratives, land mines to avoid, differentiation opportunities.
 
 ### 2. PMM positioning

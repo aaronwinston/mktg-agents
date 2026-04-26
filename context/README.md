@@ -1,136 +1,113 @@
 # context/
 
-This directory is where you drop files that give agents richer, more specific knowledge before they do any work.
+This directory holds the curated knowledge base that agents read before doing any work. The better this folder is, the less correcting you do after.
 
-All agents in this repo are instructed to check the relevant subdirectory before producing output. The more you put here, the less correcting you do later.
+Add files by dropping your own content — docs, notes, frameworks, examples — into the right section. Agents read the relevant files before producing any output.
 
 ---
 
-## Directory structure
+## Structure
 
 ```
 context/
-  my-writing/        # Your published work — blog posts, social, talks, newsletters
-  arize/             # Arize AI product docs, internal positioning, feature notes
-  audience/          # Who you're writing for — ICPs, personas, community intel
-  research/          # Papers, articles, external sources agents can cite or reference
-  approved-messaging/ # Locked copy — taglines, product descriptions, legal-cleared claims
-  competitive/       # Competitor research, positioning analysis, differentiation notes
+  01_philosophy/     # Your beliefs and principles — the "why" behind decisions
+  02_narrative/      # Messaging, competitive POV, campaign framing
+  03_strategy/       # How you're approaching content, GTM, and AR right now
+  04_execution/      # How work actually gets done — process and operating systems
+  05_patterns/       # What works — repeatable patterns in ads, pages, workflows
 ```
 
 ---
 
-## How to add files
+## 01_philosophy/
 
-Drop any file type into the right folder. Markdown works best — agents read it cleanly. PDFs and plain text also work. Name files clearly.
+Your foundational beliefs. Agents use these to understand the reasoning behind your decisions and avoid recommending things that contradict your actual POV.
 
-**Good file names:**
-- `my-writing/github-blog-animated-ascii-banner.md`
-- `arize/phoenix-product-overview-2025.md`
-- `audience/ai-engineer-icp.md`
-- `research/attention-is-all-you-need.md`
-- `approved-messaging/arize-ax-taglines-approved.md`
-
-**Bad file names:**
-- `draft.md`
-- `notes.txt`
-- `final_final_v3.md`
+| File | What it holds |
+|------|---------------|
+| `developer-marketing-manifesto.md` | Your beliefs about what developer marketing is, why most of it fails, and what the alternative looks like |
+| `analyst-relations-playbook.md` | Your philosophy on AR — what makes it effective vs. performative, how you approach briefings |
+| `market-research-playbook.md` | How you gather and use market signal, what sources you trust, how research informs strategy |
 
 ---
 
-## What goes where
+## 02_narrative/
 
-### `my-writing/`
-Paste in or link to your published writing. Blog posts, LinkedIn posts, Twitter threads, talks, newsletter editions, anything you've shipped that represents how you think and write.
+The messaging layer. Agents check this before writing anything that touches positioning, competitive framing, or campaign copy.
 
-Agents use these to:
-- Match your voice precisely (not just rules — actual patterns)
-- Understand your point of view on a topic before drafting
-- Check their output against real examples
-
-**Tip:** Include a one-line header at the top of each file with the source and date.
-```
-<!-- Source: GitHub Blog | Published: 2024-11-14 -->
-```
+| File | What it holds |
+|------|---------------|
+| `messaging-framework.md` | Positioning statement, message house, approved taglines, what the messaging rules out |
+| `campaign-messaging.md` | Active campaign narrative, hooks, approved CTAs, channel variations |
+| `competitive-pov.md` | How Arize is differentiated, what competitors say, language to avoid, battle card notes |
 
 ---
 
-### `arize/`
-Internal product knowledge that isn't on the public docs site. Release notes, positioning briefs, feature overviews, customer use cases (approved), roadmap context (non-confidential).
+## 03_strategy/
 
-Agents use these to:
-- Write about features accurately, with the right terminology
-- Avoid outdated or incorrect product descriptions
-- Reference the right level of maturity for a feature
+Current strategic context. Agents use this to calibrate recommendations against where things actually are.
 
----
-
-### `audience/`
-Who you're writing for — written out. Persona docs, ICP definitions, community observations, interview notes, survey data, anything that describes your readers.
-
-Agents use these to:
-- Calibrate technical depth correctly
-- Write to the right level of sophistication
-- Avoid alienating the audience with wrong assumptions
+| File | What it holds |
+|------|---------------|
+| `content-strategy.md` | Editorial priorities, content mix, audience targets, distribution, what we're not doing |
+| `post-gtm-blueprint.md` | How you think about sustained growth after launch — what compounds, what spikes and decays |
+| `ar-strategy.md` | Priority analysts, relationship status, narrative arc, upcoming briefings |
 
 ---
 
-### `research/`
-Papers, articles, blog posts, or source material you want agents to be able to cite, reference, or synthesize. Drop the full text or a detailed summary.
+## 04_execution/
 
-Agents use these to:
-- Ground claims in real sources
-- Summarize findings accurately
-- Recommend relevant reading in content
+How work actually happens. Agents use this to produce plans that match operational reality.
 
----
-
-### `approved-messaging/`
-Final, locked copy. Taglines, product one-liners, boilerplate descriptions, legal-cleared claims, partnership language. Anything that should not be improvised.
-
-Agents use these to:
-- Pull exact approved phrasing instead of generating new variants
-- Check that drafted copy doesn't contradict approved language
-- Hold the line on claims that have been through review
+| File | What it holds |
+|------|---------------|
+| `gtm-operating-system.md` | Launch process, cross-functional motions, decision gates, T-minus cadence |
+| `campaign-brief.md` | The active or most recent campaign brief — updated each cycle |
+| `post-launch-framework.md` | What happens after launch day — content cadence, performance signals, when to move on |
 
 ---
 
-### `competitive/`
-Competitor research, positioning analysis, battle card notes, win/loss observations, analyst coverage of competitors. Anything that helps the `competitive-intelligence` skill give real, grounded analysis instead of generic observations.
+## 05_patterns/
 
-Agents use these to:
-- Ground competitive claims in actual research
-- Frame differentiation against what competitors really say
-- Prepare analyst responses that anticipate competitive narratives
+What works. Repeatable patterns agents can pull from when producing specific content types.
 
-**The `competitive-intelligence` skill is invoked proactively throughout the editorial process — the better this folder is, the sharper every piece of content becomes.**
+| File | What it holds |
+|------|---------------|
+| `developer-ads.md` | Ad copy patterns, targeting approaches, what resonates with developers |
+| `landing-pages.md` | Page structure, headline formulas, CTA patterns, social proof for technical audiences |
+| `workflows.md` | Repeatable execution workflows — social amplification, case study production, launch week checklist |
 
 ---
 
-## How agents should use this directory
+## How agents use this directory
 
-When producing any content, agents should:
+When starting any task, agents check the relevant files based on content type:
 
-1. Check `context/my-writing/` — read any relevant samples to calibrate voice
-2. Check `context/arize/` — confirm product details before writing about Arize
-3. Check `context/audience/` — confirm who they're writing for
-4. Check `context/approved-messaging/` — pull exact phrasing where it exists
-5. Check `context/research/` — if the topic has relevant sources there, use them
-6. Check `context/competitive/` — for any content with competitive surface area
+| Task type | Files to check |
+|-----------|----------------|
+| Any writing task | `02_narrative/messaging-framework.md` |
+| Anything competitive | `02_narrative/competitive-pov.md` |
+| Active campaign content | `02_narrative/campaign-messaging.md` |
+| Launch or GTM content | `03_strategy/content-strategy.md`, `04_execution/gtm-operating-system.md` |
+| Analyst relations | `01_philosophy/analyst-relations-playbook.md`, `03_strategy/ar-strategy.md`, `02_narrative/competitive-pov.md` |
+| Strategy or editorial direction | `01_philosophy/developer-marketing-manifesto.md`, `03_strategy/content-strategy.md` |
+| Paid or landing page copy | `05_patterns/developer-ads.md`, `05_patterns/landing-pages.md` |
+| Post-launch content | `04_execution/post-launch-framework.md` |
 
 **Instruction to include in any task prompt:**
 ```
-Before writing, read context/README.md and check the relevant subdirectories for
-files that inform this task. Use my-writing/ to match voice, arize/ for product
-accuracy, approved-messaging/ for any locked copy, audience/ to calibrate depth,
-and competitive/ for any competitive framing.
+Before beginning, read context/README.md and check the relevant files for this task.
 ```
 
 ---
 
-## Maintenance
+## Adding content
 
-- Add new writing to `my-writing/` after anything publishes
-- Update `arize/` when products or features change significantly
-- Archive outdated files by prefixing with `_archive-`
-- Don't leave placeholder files here — delete them when you replace them with real content
+Drop your own docs, notes, decks, or frameworks directly into the right file. These don't need to be polished — rough notes with your real thinking beat empty templates every time.
+
+Label content clearly at the top of each file so agents know what they're reading:
+```
+<!-- Source: Internal positioning doc | Updated: 2025-Q2 -->
+```
+
+Update files when strategy or messaging changes. Archive old versions by prefixing with `_archive-`.
