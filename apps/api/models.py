@@ -30,11 +30,15 @@ class Deliverable(SQLModel, table=True):
 
 class Brief(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    deliverable_id: Optional[int] = Field(default=None, foreign_key="deliverable.id")
+    user_id: str = Field(default="aaron")
     project_id: int = Field(foreign_key="project.id")
-    brief_md: str
+    title: str
+    audience: Optional[str] = None
+    description: Optional[str] = None
+    brief_md: Optional[str] = None
     toggles_json: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 class ChatSession(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
