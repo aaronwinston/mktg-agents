@@ -17,7 +17,7 @@ export default function IntelligencePage() {
     loadItems();
   };
 
-  const useAsContext = async (id: number) => {
+  const markAsContext = async (id: number) => {
     await fetch(`http://localhost:8000/api/intelligence/items/${id}/use-as-context`, { method: 'POST' });
     alert('Item marked for context use.');
   };
@@ -59,7 +59,7 @@ export default function IntelligencePage() {
                 {item.body && <p className="text-xs mt-1 line-clamp-3">{item.body}</p>}
               </div>
               <div className="flex gap-2 shrink-0">
-                <button onClick={() => useAsContext(item.id)} className="px-2 py-1 border rounded text-xs">Use</button>
+                <button onClick={() => markAsContext(item.id)} className="px-2 py-1 border rounded text-xs">Use</button>
                 <button onClick={() => dismiss(item.id)} className="px-2 py-1 text-xs text-gray-500 hover:text-gray-700">Dismiss</button>
               </div>
             </div>
