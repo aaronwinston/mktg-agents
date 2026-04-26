@@ -75,7 +75,7 @@ def delete_session(session_id: int, session: Session = Depends(get_session)):
 
 @router.post("/{session_id}/run")
 async def run_session(session_id: int, session: Session = Depends(get_session)):
-    s = session.get(AgentSession, session_id)
+    s = session.get(PipelineRun, session_id)
     if not s or s.deleted:
         raise HTTPException(status_code=404, detail="Session not found")
     
@@ -93,7 +93,7 @@ async def run_session(session_id: int, session: Session = Depends(get_session)):
         async def on_update(event: dict):
             await queue.put(event)
             with DBSession(engine) as db:
-                sess = db.get(AgentSession, session_id)
+                sess = db.get(PipelineRun, session_id)
                 if sess:
                     if event.get("type") == "agent_update":
                         sess.current_agent = event["agent"]
@@ -101,7 +101,6 @@ async def run_session(session_id: int, session: Session = Depends(get_session)):
                         sess.status = "active"
                     elif event.get("type") == "agent_complete":
                         sess.progress = event["progress"]
-                        sess.output = event["output"]
                     db.add(sess)
                     db.commit()
         
@@ -123,11 +122,10 @@ async def run_session(session_id: int, session: Session = Depends(get_session)):
                 })
         
         with DBSession(engine) as db:
-            sess = db.get(AgentSession, session_id)
+            sess = db.get(PipelineRun, session_id)
             if sess:
                 sess.status = "complete"
                 sess.progress = 100
-                sess.output = final_output
                 sess.updated_at = datetime.utcnow()
                 db.add(sess)
                 db.commit()

@@ -1,10 +1,12 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/Button';
 
 export default function IntelligencePage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const loadItems = () => fetch('http://localhost:8000/api/intelligence/items')
     .then(r => r.json()).then(setItems).catch(console.error);
@@ -22,23 +24,36 @@ export default function IntelligencePage() {
     alert('Item marked for context use.');
   };
 
-  const triggerScrape = async () => {
-    setLoading(true);
-    await fetch('http://localhost:8000/api/intelligence/scrape', { method: 'POST' });
-    setTimeout(() => { loadItems(); setLoading(false); }, 3000);
+  const handleRefreshNow = async () => {
+    setRefreshing(true);
+    try {
+      await fetch('http://localhost:8000/api/intelligence/scrape', { method: 'POST' });
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      loadItems();
+    } catch (error) {
+      console.error('Refresh failed:', error);
+      alert('Failed to refresh intelligence. Please try again.');
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Intelligence Feed</h1>
-        <button onClick={triggerScrape} disabled={loading} className="px-4 py-2 bg-black text-white rounded text-sm disabled:opacity-50">
-          {loading ? 'Scraping...' : 'Run Scrape'}
-        </button>
+        <Button 
+          variant="secondary" 
+          size="sm" 
+          onClick={handleRefreshNow} 
+          loading={refreshing}
+        >
+          Refresh now ↻
+        </Button>
       </div>
       {items.length === 0 && (
         <div className="border rounded-lg p-6">
-          <p className="text-gray-500">No items yet. Click &quot;Run Scrape&quot; to pull the latest intelligence.</p>
+          <p className="text-gray-500">No items yet. Click &quot;Refresh now&quot; to pull the latest intelligence.</p>
         </div>
       )}
       <div className="space-y-3">
@@ -55,6 +70,7 @@ export default function IntelligencePage() {
                   )}
                 </div>
                 <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="text-sm font-medium hover:underline">{item.title}</a>
+                {item.why_relevant && <p className="text-xs text-fg-secondary mt-1">{item.why_relevant}</p>}
                 {item.score_reasoning && <p className="text-xs text-gray-500 italic mt-1">{item.score_reasoning}</p>}
                 {item.body && <p className="text-xs mt-1 line-clamp-3">{item.body}</p>}
               </div>
@@ -69,3 +85,4 @@ export default function IntelligencePage() {
     </div>
   );
 }
+
