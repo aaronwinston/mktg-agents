@@ -99,6 +99,10 @@ app = FastAPI(title="ForgeOS API", version="1.0.0")
 
 setup_rate_limiting(app)
 
+# Performance monitoring middleware (logs slow endpoints)
+from middleware.performance import PerformanceMonitoringMiddleware
+app.add_middleware(PerformanceMonitoringMiddleware)
+
 # Request/response logging (method, path, status, latency, sizes, auth context)
 # This is always useful, even in personal mode
 app.add_middleware(RequestLoggingMiddleware)
