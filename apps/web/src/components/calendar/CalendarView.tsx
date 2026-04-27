@@ -246,6 +246,8 @@ export default function CalendarView() {
               weekStart={cursor}
               events={events}
               onDateClick={handleDateClick}
+              onEventDrop={handleEventDrop}
+              pendingMoves={pendingMoves}
             />
           )}
           {viewMode === 'agenda' && (
