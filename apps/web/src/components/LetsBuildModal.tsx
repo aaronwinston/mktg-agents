@@ -98,29 +98,29 @@ export default function LetsBuildModal({ isOpen, onClose, onSuccess }: LetsBuild
         {/* Header */}
         <div className="border-b p-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h2 className="text-xl font-semibold">Let&apos;s Build</h2>
-            <div className="flex gap-2">
-              <button
-                onClick={() => handleModeChange('guided')}
-                className={`px-3 py-1 rounded text-sm transition ${
-                  mode === 'guided'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Guided
-              </button>
-              <button
-                onClick={() => handleModeChange('yolo')}
-                className={`px-3 py-1 rounded text-sm transition ${
-                  mode === 'yolo'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                YOLO
-              </button>
-            </div>
+        <h2 className="text-xl font-semibold">Let&apos;s build</h2>
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleModeChange('guided')}
+              className={`px-3 py-1 rounded text-sm transition ${
+                mode === 'guided'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Guided
+            </button>
+            <button
+              onClick={() => handleModeChange('yolo')}
+              className={`px-3 py-1 rounded text-sm transition ${
+                mode === 'yolo'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              YOLO
+            </button>
+          </div>
           </div>
           <button
             onClick={handleClose}
@@ -295,7 +295,7 @@ export default function LetsBuildModal({ isOpen, onClose, onSuccess }: LetsBuild
               <div className="flex-1 flex flex-col items-center justify-center p-4">
                 <div className="text-center">
                   <div className="text-5xl mb-4">✨</div>
-                  <h3 className="text-xl font-semibold mb-2">Deliverable created!</h3>
+                    <h3 className="text-xl font-semibold mb-2">Deliverable created!</h3>
                   <p className="text-gray-600 mb-6">
                     {deliverable.title} is ready in your workspace
                   </p>
@@ -313,7 +313,7 @@ export default function LetsBuildModal({ isOpen, onClose, onSuccess }: LetsBuild
                       onClick={resetForm}
                       className="px-6 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300 transition"
                     >
-                      Create Another
+                      Create another
                     </button>
                   </div>
                 </div>
@@ -581,7 +581,7 @@ function BriefPreview({ brief, onConfirm, onEdit, loading }: BriefPreviewProps) 
           disabled={loading}
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 transition"
         >
-          {loading ? 'Creating...' : 'Create Deliverable'}
+          {loading ? 'Creating...' : 'Create deliverable'}
         </button>
       </div>
     </div>
