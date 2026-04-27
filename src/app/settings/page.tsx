@@ -1,0 +1,214 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import EngineTree from '@/components/settings/EngineTree';
+import EngineEditor from '@/components/settings/EngineEditor';
+import SettingsConfig from '@/components/settings/SettingsConfig';
+import KeywordClusterConfig from '@/components/settings/KeywordClusterConfig';
+import UploadZone from '@/components/settings/UploadZone';
+import UploadDestinationModal, { type UploadDestination } from '@/components/settings/UploadDestinationModal';
+import { AlertCircle } from 'lucide-react';
+import { getApiBase } from '@/lib/api';
+
+type Tab = 'engine' | 'settings' | 'search';
+
+export default function SettingsPage() {
+  const [selectedPath, setSelectedPath] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>('engine');
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
+
+  // Upload state
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadResult, setUploadResult] = useState<{ destination: string; chars_written: number } | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Handle navigation with unsaved changes warning
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
+  function handleTabChange(tab: Tab) {
+    if (isDirty && activeTab === 'engine') {
+      setShowUnsavedWarning(true);
+      setPendingNavigation(`tab:${tab}`);
+    } else {
+      setActiveTab(tab);
+      setIsDirty(false);
+    }
+  }
+
+  function handleSelectFile(path: string) {
+    if (isDirty && selectedPath !== null) {
+      setShowUnsavedWarning(true);
+      setPendingNavigation(`file:${path}`);
+    } else {
+      setSelectedPath(path);
+      setIsDirty(false);
+    }
+  }
+
+  function handleNavigateToFile(path: string) {
+    handleSelectFile(path);
+  }
+
+  function confirmUnsavedNavigation() {
+    setShowUnsavedWarning(false);
+    if (pendingNavigation?.startsWith('tab:')) {
+      const tab = pendingNavigation.split(':')[1] as Tab;
+      setActiveTab(tab);
+      setIsDirty(false);
+    } else if (pendingNavigation?.startsWith('file:')) {
+      const path = pendingNavigation.split(':').slice(1).join(':');
+      setSelectedPath(path);
+      setIsDirty(false);
+    }
+    setPendingNavigation(null);
+  }
+
+  async function handleUploadConfirm(destination: UploadDestination, projectId?: string) {
+    if (!pendingFile) return;
+    setUploading(true);
+    setUploadError(null);
+    setUploadResult(null);
+    try {
+      const form = new FormData();
+      form.append('file', pendingFile);
+      form.append('destination', destination);
+      if (projectId) form.append('project_id', projectId);
+      const res = await fetch(`${getApiBase()}/api/settings/upload`, { method: 'POST', body: form });
+      if (!res.ok) throw new Error(`Upload failed: ${res.status}`);
+      const data = await res.json();
+      setUploadResult(data);
+      setPendingFile(null);
+    } catch (e) {
+      setUploadError(e instanceof Error ? e.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col h-full bg-bg-primary">
+      {/* Unsaved changes warning modal */}
+      {showUnsavedWarning && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-bg-secondary border border-border rounded-card shadow-lg max-w-md p-6 space-y-4">
+            <div className="flex gap-3">
+              <AlertCircle size={20} className="text-warning flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-bold text-fg-primary">Unsaved changes</h3>
+                <p className="text-sm text-fg-secondary mt-1">You have unsaved changes in {selectedPath?.split('/').pop() || 'the file'}. Do you want to leave without saving?</p>
+              </div>
+            </div>
+            <div className="flex gap-2 justify-end pt-4">
+              <button
+                onClick={() => setShowUnsavedWarning(false)}
+                className="px-4 py-2 text-fg-secondary bg-bg-tertiary rounded-input hover:bg-bg-tertiary/80 font-medium text-sm border border-border"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmUnsavedNavigation}
+                className="px-4 py-2 text-white bg-warning rounded-input hover:bg-warning/90 font-medium text-sm"
+              >
+                Leave without saving
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div className="border-b border-border bg-bg-secondary sticky top-0 z-10">
+        <div className="flex">
+          <button
+            onClick={() => handleTabChange('engine')}
+            className={`px-6 py-3 font-medium text-sm border-b-2 transition ${
+              activeTab === 'engine'
+                ? 'border-accent text-accent'
+                : 'border-transparent text-fg-secondary hover:text-fg-primary'
+            }`}
+          >
+            Engine files
+          </button>
+          <button
+            onClick={() => handleTabChange('settings')}
+            className={`px-6 py-3 font-medium text-sm border-b-2 transition ${
+              activeTab === 'settings'
+                ? 'border-accent text-accent'
+                : 'border-transparent text-fg-secondary hover:text-fg-primary'
+            }`}
+          >
+            Settings & integrations
+          </button>
+          <button
+            onClick={() => handleTabChange('search')}
+            className={`px-6 py-3 font-medium text-sm border-b-2 transition ${
+              activeTab === 'search'
+                ? 'border-accent text-accent'
+                : 'border-transparent text-fg-secondary hover:text-fg-primary'
+            }`}
+          >
+            Search intelligence
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-hidden flex">
+        {activeTab === 'engine' ? (
+          <>
+            <div className="flex flex-col w-64 shrink-0 border-r border-border overflow-hidden">
+              <EngineTree selectedPath={selectedPath} onSelect={handleSelectFile} />
+              {/* Upload zone at bottom of engine sidebar */}
+              <div className="border-t border-border p-4 space-y-3">
+                <p className="text-xs font-semibold text-fg-tertiary">Upload to engine</p>
+                <UploadZone onUpload={(file) => { setPendingFile(file); setUploadResult(null); setUploadError(null); }} />
+                {uploadResult && (
+                  <p className="text-xs text-success">
+                    ✓ Appended {uploadResult.chars_written} chars → {uploadResult.destination}
+                  </p>
+                )}
+                {uploadError && (
+                  <p className="text-xs text-error">{uploadError}</p>
+                )}
+              </div>
+            </div>
+            <EngineEditor
+              filePath={selectedPath}
+              isDirty={isDirty}
+              onDirtyChange={setIsDirty}
+            />
+          </>
+        ) : activeTab === 'settings' ? (
+          <SettingsConfig onNavigateTo={handleNavigateToFile} />
+        ) : (
+          <div className="flex-1 overflow-auto p-6">
+            <KeywordClusterConfig />
+          </div>
+        )}
+      </div>
+
+      {/* Upload destination modal */}
+      {pendingFile && (
+        <UploadDestinationModal
+          filename={pendingFile.name}
+          onConfirm={handleUploadConfirm}
+          onCancel={() => { setPendingFile(null); setUploadError(null); }}
+          uploading={uploading}
+        />
+      )}
+    </div>
+  );
+}
