@@ -49,6 +49,12 @@ class SkillsRequest(BaseModel):
 class IntelligenceItemsRequest(BaseModel):
     items: list[int]
 
+class BriefUpdateRequest(BaseModel):
+    title: Optional[str] = None
+    audience: Optional[str] = None
+    description: Optional[str] = None
+    toggles: Optional[dict] = None
+
 @router.post("/session")
 def create_session(
     project_id: Optional[int] = None,
@@ -262,3 +268,35 @@ def remove_intelligence_item(brief_id: int, item_id: int, session: Session = Dep
     session.commit()
     session.refresh(brief)
     return {"id": brief.id, "intelligence_items": items}
+
+
+@router.put("/briefs/{brief_id}")
+def update_brief(brief_id: int, req: BriefUpdateRequest, session: Session = Depends(get_session)):
+    """Update Brief fields: title, audience, description, and toggles"""
+    brief = session.get(Brief, brief_id)
+    if not brief:
+        raise HTTPException(status_code=404, detail="Brief not found")
+    
+    if req.title is not None:
+        brief.title = req.title
+    if req.audience is not None:
+        brief.audience = req.audience
+    if req.description is not None:
+        brief.description = req.description
+        brief.brief_md = req.description
+    if req.toggles is not None:
+        brief.toggles_json = json.dumps(req.toggles)
+    
+    brief.updated_at = datetime.utcnow()
+    session.add(brief)
+    session.commit()
+    session.refresh(brief)
+    
+    return {
+        "id": brief.id,
+        "title": brief.title,
+        "audience": brief.audience,
+        "description": brief.description,
+        "brief_md": brief.brief_md,
+        "toggles": json.loads(brief.toggles_json) if brief.toggles_json else {},
+    }
