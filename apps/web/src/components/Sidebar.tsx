@@ -10,6 +10,7 @@ export default function Sidebar() {
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/sessions', label: 'Sessions' },
     { href: '/intelligence', label: 'Intelligence' },
+    { href: '/search', label: 'Search Intelligence' },
     { href: '/calendar', label: 'Calendar' },
     { href: '/settings', label: 'Settings' },
   ];
