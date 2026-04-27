@@ -1,6 +1,7 @@
 from typing import Optional
 from datetime import datetime
 from sqlmodel import SQLModel, Field
+from sqlalchemy import Index
 from pydantic import PrivateAttr
 from cryptography.fernet import Fernet
 from config import settings
@@ -202,6 +203,11 @@ class KeywordCluster(SQLModel, table=True):
     active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    __table_args__ = (
+        Index('idx_keyword_cluster_user_active', 'user_id', 'active'),
+        Index('idx_keyword_cluster_keyword', 'keyword'),
+    )
 
 class GscQuery(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -215,6 +221,12 @@ class GscQuery(SQLModel, table=True):
     date_range_start: str
     date_range_end: str
     fetched_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    __table_args__ = (
+        Index('idx_gsc_query_user_query', 'user_id', 'query'),
+        Index('idx_gsc_query_user_page', 'user_id', 'page'),
+        Index('idx_gsc_query_fetched', 'user_id', 'fetched_at'),
+    )
 
 class TrendsData(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -224,6 +236,11 @@ class TrendsData(SQLModel, table=True):
     interest_over_time_json: Optional[str] = None
     related_queries_json: Optional[str] = None
     fetched_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    __table_args__ = (
+        Index('idx_trends_data_user_keyword', 'user_id', 'keyword'),
+        Index('idx_trends_data_fetched', 'user_id', 'fetched_at'),
+    )
 
 class SearchInsight(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -235,3 +252,9 @@ class SearchInsight(SQLModel, table=True):
     trends_momentum: str = Field(default="no_data")
     insight_text: str
     generated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    __table_args__ = (
+        Index('idx_search_insight_user_momentum', 'user_id', 'trends_momentum'),
+        Index('idx_search_insight_generated', 'user_id', 'generated_at'),
+        Index('idx_search_insight_topic', 'user_id', 'topic'),
+    )
