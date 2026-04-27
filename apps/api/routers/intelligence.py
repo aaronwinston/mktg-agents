@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, BackgroundTasks
 from sqlmodel import Session, select
 from database import get_session
 from models import ScrapeItem, SearchInsight, KeywordCluster
+from middleware.auth import get_current_user, AuthContext
 from services.scraping import run_all_scrapers, DEFAULT_SUBREDDITS, GITHUB_TOPICS, ARXIV_FEEDS, DEFAULT_RSS_FEEDS
 from services.scoring import score_items_batch, synthesize_items_batch
 from datetime import datetime
@@ -19,28 +20,45 @@ class KeywordClusterUpdate(BaseModel):
 router = APIRouter(prefix="/api/intelligence", tags=["intelligence"])
 
 @router.get("/feed")
-def get_feed(session: Session = Depends(get_session)):
+def get_feed(
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     items = session.exec(
         select(ScrapeItem)
         .where(ScrapeItem.dismissed_at == None)  # noqa: E711
         .where(ScrapeItem.score >= 7)
+        .where(ScrapeItem.organization_id == auth.org_id)
         .order_by(ScrapeItem.score.desc())
     ).all()
     return items
 
 @router.get("/items")
-def list_items(limit: int = 50, session: Session = Depends(get_session)):
+def list_items(
+    limit: int = 50,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     items = session.exec(
         select(ScrapeItem)
         .where(ScrapeItem.dismissed_at == None)  # noqa: E711
+        .where(ScrapeItem.organization_id == auth.org_id)
         .order_by(ScrapeItem.created_at.desc())
         .limit(limit)
     ).all()
     return items
 
 @router.post("/items/{item_id}/dismiss")
-def dismiss_item(item_id: int, session: Session = Depends(get_session)):
-    item = session.get(ScrapeItem, item_id)
+def dismiss_item(
+    item_id: int,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    item = session.exec(
+        select(ScrapeItem).where(
+            (ScrapeItem.id == item_id) & (ScrapeItem.organization_id == auth.org_id)
+        )
+    ).first()
     if item:
         item.dismissed_at = datetime.utcnow()
         session.add(item)
@@ -48,8 +66,16 @@ def dismiss_item(item_id: int, session: Session = Depends(get_session)):
     return {"ok": True}
 
 @router.post("/items/{item_id}/use-as-context")
-def use_as_context(item_id: int, session: Session = Depends(get_session)):
-    item = session.get(ScrapeItem, item_id)
+def use_as_context(
+    item_id: int,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    item = session.exec(
+        select(ScrapeItem).where(
+            (ScrapeItem.id == item_id) & (ScrapeItem.organization_id == auth.org_id)
+        )
+    ).first()
     if item:
         item.surfaced_to_user_at = datetime.utcnow()
         session.add(item)
@@ -96,46 +122,73 @@ def get_config():
     }
 
 @router.get("/search/insights")
-def get_search_insights(session: Session = Depends(get_session)):
+def get_search_insights(
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     """Get all search insights."""
     insights = session.exec(
         select(SearchInsight)
+        .where(SearchInsight.organization_id == auth.org_id)
         .order_by(SearchInsight.generated_at.desc())
         .limit(100)
     ).all()
     return insights
 
 @router.get("/search/keywords")
-def get_keyword_clusters(session: Session = Depends(get_session)):
+def get_keyword_clusters(
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     """Get all active keyword clusters."""
     clusters = session.exec(
         select(KeywordCluster)
         .where(KeywordCluster.active == True)  # noqa: E712
+        .where(KeywordCluster.organization_id == auth.org_id)
         .order_by(KeywordCluster.created_at.desc())
     ).all()
     return clusters
 
 @router.post("/search/keywords")
-def add_keyword_cluster(data: KeywordClusterInput, session: Session = Depends(get_session)):
+def add_keyword_cluster(
+    data: KeywordClusterInput,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     """Add a new keyword cluster."""
     existing = session.exec(
         select(KeywordCluster)
         .where(KeywordCluster.keyword == data.keyword)
         .where(KeywordCluster.region == data.region)
+        .where(KeywordCluster.organization_id == auth.org_id)
     ).first()
     if existing:
         return {"error": f"Keyword '{data.keyword}' already exists for region {data.region}"}
     
-    cluster = KeywordCluster(keyword=data.keyword, region=data.region, active=True)
+    cluster = KeywordCluster(
+        keyword=data.keyword,
+        region=data.region,
+        organization_id=auth.org_id,
+        active=True
+    )
     session.add(cluster)
     session.commit()
     session.refresh(cluster)
     return cluster
 
 @router.put("/search/keywords/{cluster_id}")
-def update_keyword_cluster(cluster_id: int, data: KeywordClusterUpdate, session: Session = Depends(get_session)):
+def update_keyword_cluster(
+    cluster_id: int,
+    data: KeywordClusterUpdate,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     """Update a keyword cluster."""
-    cluster = session.get(KeywordCluster, cluster_id)
+    cluster = session.exec(
+        select(KeywordCluster).where(
+            (KeywordCluster.id == cluster_id) & (KeywordCluster.organization_id == auth.org_id)
+        )
+    ).first()
     if not cluster:
         return {"error": f"Cluster {cluster_id} not found"}
     
@@ -151,9 +204,17 @@ def update_keyword_cluster(cluster_id: int, data: KeywordClusterUpdate, session:
     return cluster
 
 @router.delete("/search/keywords/{cluster_id}")
-def delete_keyword_cluster(cluster_id: int, session: Session = Depends(get_session)):
+def delete_keyword_cluster(
+    cluster_id: int,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     """Delete a keyword cluster."""
-    cluster = session.get(KeywordCluster, cluster_id)
+    cluster = session.exec(
+        select(KeywordCluster).where(
+            (KeywordCluster.id == cluster_id) & (KeywordCluster.organization_id == auth.org_id)
+        )
+    ).first()
     if not cluster:
         return {"error": f"Cluster {cluster_id} not found"}
     

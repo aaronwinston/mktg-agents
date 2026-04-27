@@ -90,7 +90,11 @@ async def chat_stream(
     session: Session = Depends(get_session)
 ):
     if req.session_id:
-        chat_session = session.get(ChatSession, req.session_id)
+        chat_session = session.exec(
+            select(ChatSession).where(
+                (ChatSession.id == req.session_id) & (ChatSession.organization_id == auth.org_id)
+            )
+        ).first()
         if not chat_session:
             raise HTTPException(status_code=404, detail="Session not found")
     else:
@@ -100,18 +104,29 @@ async def chat_stream(
         session.refresh(chat_session)
 
     history = session.exec(
-        select(ChatMessage).where(ChatMessage.session_id == chat_session.id)
+        select(ChatMessage).where(
+            (ChatMessage.session_id == chat_session.id) & (ChatMessage.organization_id == auth.org_id)
+        )
     ).all()
     messages = [{"role": m.role, "content": m.content} for m in history]
     messages.append({"role": "user", "content": req.message})
 
-    user_msg = ChatMessage(session_id=chat_session.id, role="user", content=req.message)
+    user_msg = ChatMessage(
+        session_id=chat_session.id,
+        organization_id=auth.org_id,
+        role="user",
+        content=req.message
+    )
     session.add(user_msg)
     session.commit()
 
     scrape_items = []
     for item_id in req.scrape_item_ids:
-        item = session.get(ScrapeItem, item_id)
+        item = session.exec(
+            select(ScrapeItem).where(
+                (ScrapeItem.id == item_id) & (ScrapeItem.organization_id == auth.org_id)
+            )
+        ).first()
         if item:
             scrape_items.append({"title": item.title, "body": item.body, "source_url": item.source_url})
 
@@ -135,6 +150,7 @@ async def chat_stream(
             with Session(session_bind) as save_session:
                 ai_msg = ChatMessage(
                     session_id=chat_session_id,
+                    organization_id=org_id,
                     role="assistant",
                     content=full_response
                 )
@@ -481,7 +497,11 @@ Do NOT output anything else after the JSON. The JSON is your final response."""
 
 
 @router.post("/brief-yolo")
-async def brief_yolo(req: BriefYoloRequest, session: Session = Depends(get_session)):
+async def brief_yolo(
+    req: BriefYoloRequest,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     """YOLO mode: atomic one-shot brief + deliverable creation.
     
     Creates Brief and Deliverable in a single transaction.
@@ -499,20 +519,32 @@ async def brief_yolo(req: BriefYoloRequest, session: Session = Depends(get_sessi
         
         # Get or create default project
         project = session.exec(
-            select(Project).where(Project.user_id == "aaron")
+            select(Project).where(
+                (Project.user_id == auth.user_id) & (Project.organization_id == auth.org_id)
+            )
         ).first()
         if not project:
-            project = Project(user_id="aaron", name="Default Project")
+            project = Project(
+                user_id=auth.user_id,
+                organization_id=auth.org_id,
+                name="Default Project"
+            )
             session.add(project)
             session.commit()
             session.refresh(project)
         
         # Get or create default folder
         folder = session.exec(
-            select(Folder).where(Folder.project_id == project.id)
+            select(Folder).where(
+                (Folder.project_id == project.id) & (Folder.organization_id == auth.org_id)
+            )
         ).first()
         if not folder:
-            folder = Folder(project_id=project.id, name="Deliverables")
+            folder = Folder(
+                project_id=project.id,
+                organization_id=auth.org_id,
+                name="Deliverables"
+            )
             session.add(folder)
             session.commit()
             session.refresh(folder)
@@ -520,6 +552,8 @@ async def brief_yolo(req: BriefYoloRequest, session: Session = Depends(get_sessi
         # Create Brief (atomic transaction)
         brief = Brief(
             project_id=project.id,
+            organization_id=auth.org_id,
+            user_id=auth.user_id,
             title=content_type.replace("_", " ").title(),
             brief_md=brief_md,
             toggles_json=json.dumps(req.toggles),
@@ -530,6 +564,7 @@ async def brief_yolo(req: BriefYoloRequest, session: Session = Depends(get_sessi
         # Create Deliverable in same transaction
         deliverable = Deliverable(
             folder_id=folder.id,
+            organization_id=auth.org_id,
             content_type=content_type,
             title=content_type.replace("_", " ").title(),
             status="draft",
