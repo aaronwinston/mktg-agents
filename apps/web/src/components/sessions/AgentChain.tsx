@@ -46,7 +46,7 @@ export function AgentChain({ session: initialSession, onUpdate }: AgentChainProp
   return (
     <div className="border border-border rounded-card overflow-hidden bg-bg-secondary">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-        <h3 className="text-sm font-semibold text-fg-primary">Agent Chain</h3>
+        <h3 className="text-sm font-semibold text-fg-primary">Agent chain</h3>
         {session.status !== 'complete' && (
           <Button size="sm" onClick={handleRun} loading={running} disabled={running || session.status === 'active'}>
             {session.status === 'active' ? 'Running…' : 'Run Chain'}

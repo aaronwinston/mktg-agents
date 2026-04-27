@@ -81,7 +81,7 @@ export function NewSessionModal({ onClose, onCreated }: NewSessionModalProps) {
           </div>
           <div className="flex gap-3 pt-2">
             <Button type="button" variant="secondary" onClick={onClose} className="flex-1">Cancel</Button>
-            <Button type="submit" loading={loading} className="flex-1">Create Session</Button>
+            <Button type="submit" loading={loading} className="flex-1">Create session</Button>
           </div>
         </form>
       </div>

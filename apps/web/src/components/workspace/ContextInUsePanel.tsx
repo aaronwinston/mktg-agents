@@ -132,7 +132,7 @@ export default function ContextInUsePanel({
           {/* Context Layers */}
           {contextLayers.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-gray-600 mb-1.5">Context Layers</p>
+              <p className="text-xs font-medium text-fg-tertiary mb-1.5">Context layers</p>
               <div className="space-y-1">
                 {contextLayers.map((layer) => (
                   <div
@@ -157,7 +157,7 @@ export default function ContextInUsePanel({
           {/* Skills */}
           {skills.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-gray-600 mb-1.5">Skills</p>
+              <p className="text-xs font-medium text-fg-tertiary mb-1.5">Skills</p>
               <div className="space-y-1">
                 {skills.map((skill) => (
                   <div
@@ -182,7 +182,7 @@ export default function ContextInUsePanel({
           {/* Intelligence Items */}
           {intelligenceItemIds.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-gray-600 mb-1.5">Intelligence Items</p>
+              <p className="text-xs font-medium text-fg-tertiary mb-1.5">Intelligence items</p>
               <div className="space-y-1">
                 {intelligenceItemIds.map((itemId) => {
                   const item = intelligenceItems.find((i) => i.id === itemId);

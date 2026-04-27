@@ -537,7 +537,7 @@ function BriefPreview({ brief, onConfirm, onEdit, loading }: BriefPreviewProps) 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
       <div className="flex-1 overflow-y-auto p-4">
-        <h3 className="font-semibold mb-4">Brief Preview</h3>
+        <h3 className="font-semibold mb-4">Brief preview</h3>
         <textarea
           value={brief.brief_md}
           onChange={(e) => onEdit(e.target.value)}

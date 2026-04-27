@@ -179,7 +179,7 @@ export default function EngineTree({ selectedPath, onSelect }: EngineTreeProps) 
   return (
     <div className="w-80 flex-shrink-0 border-r bg-gray-50 overflow-auto h-full">
       <div className="p-4 border-b sticky top-0 bg-white">
-        <h2 className="text-sm font-bold text-gray-900">Engine Structure</h2>
+        <h2 className="text-sm font-bold text-gray-900">Engine structure</h2>
       </div>
       <div className="p-2">
         {renderTree(tree)}

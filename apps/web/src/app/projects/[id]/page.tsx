@@ -230,7 +230,7 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
       <aside className="w-56 border-l p-3 space-y-4 overflow-auto">
         <p className="text-xs font-semibold text-gray-500 uppercase">Toggles</p>
         <div className="space-y-1">
-          <label className="text-xs text-gray-500">Content Type</label>
+          <label className="text-xs text-gray-500">Content type</label>
           <select className="w-full text-xs border rounded px-2 py-1.5 bg-white" value={toggles.content_type}
             onChange={e => setToggles(t => ({ ...t, content_type: e.target.value }))}>
             {CONTENT_TYPES.map(ct => <option key={ct} value={ct}>{ct}</option>)}
