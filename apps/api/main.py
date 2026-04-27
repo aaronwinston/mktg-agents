@@ -93,12 +93,12 @@ async def startup():
         except Exception as e:
             logger.error(f"Cross-reference pass failed: {str(e)}")
 
-    scheduler.add_job(scheduled_scrape, 'cron', hour=8, minute=0)
-    scheduler.add_job(scheduled_scrape, 'cron', hour=18, minute=0)
-    scheduler.add_job(scheduled_calendar_poll, 'interval', minutes=5)
-    scheduler.add_job(scheduled_trends_poll, 'cron', hour=9, minute=0)  # Daily at 9 AM
-    scheduler.add_job(scheduled_gsc_pull, 'cron', hour=9, minute=15)  # 15 min after trends
-    scheduler.add_job(scheduled_cross_reference, 'cron', hour=9, minute=30)  # 30 min after trends
+    scheduler.add_job(scheduled_scrape, 'cron', hour=8, minute=0, id='scrape_morning', replace_existing=True)
+    scheduler.add_job(scheduled_scrape, 'cron', hour=18, minute=0, id='scrape_evening', replace_existing=True)
+    scheduler.add_job(scheduled_calendar_poll, 'interval', minutes=5, id='calendar_poll', replace_existing=True)
+    scheduler.add_job(scheduled_trends_poll, 'cron', hour=9, minute=0, id='trends_poll', replace_existing=True)  # Daily at 9 AM
+    scheduler.add_job(scheduled_gsc_pull, 'cron', hour=9, minute=15, id='gsc_pull', replace_existing=True)  # 15 min after trends
+    scheduler.add_job(scheduled_cross_reference, 'cron', hour=9, minute=30, id='cross_ref_pass', replace_existing=True)  # 30 min after trends
     scheduler.start()
 
 @app.on_event("shutdown")
