@@ -5,6 +5,7 @@ from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select
 from database import get_session
 from models import PipelineRun, Brief, Deliverable, Folder, Project
+from middleware.auth import get_current_user, AuthContext
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
@@ -26,30 +27,47 @@ class SessionUpdate(BaseModel):
     output: Optional[str] = None
 
 @router.post("")
-def create_session(data: SessionCreate, session: Session = Depends(get_session)):
-    # Ensure we have a default project
+def create_session(
+    data: SessionCreate,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    # Ensure we have a default project for this org
     project = session.exec(
-        select(Project).where(Project.user_id == "aaron")
+        select(Project).where(
+            (Project.organization_id == auth.org_id) & (Project.user_id == auth.user_id)
+        )
     ).first()
     if not project:
-        project = Project(user_id="aaron", name="Default Project")
+        project = Project(
+            organization_id=auth.org_id,
+            user_id=auth.user_id,
+            name="Default Project"
+        )
         session.add(project)
         session.commit()
         session.refresh(project)
     
     # Ensure we have a default folder
     folder = session.exec(
-        select(Folder).where(Folder.project_id == project.id)
+        select(Folder).where(
+            (Folder.project_id == project.id) & (Folder.organization_id == auth.org_id)
+        )
     ).first()
     if not folder:
-        folder = Folder(project_id=project.id, name="Deliverables")
+        folder = Folder(
+            organization_id=auth.org_id,
+            project_id=project.id,
+            name="Deliverables"
+        )
         session.add(folder)
         session.commit()
         session.refresh(folder)
     
     # Create Brief
     brief = Brief(
-        user_id="aaron",
+        organization_id=auth.org_id,
+        user_id=auth.user_id,
         project_id=project.id,
         title=data.title,
         audience=data.audience,
@@ -62,6 +80,7 @@ def create_session(data: SessionCreate, session: Session = Depends(get_session))
     
     # Create Deliverable
     deliverable = Deliverable(
+        organization_id=auth.org_id,
         folder_id=folder.id,
         title=data.title,
         content_type=data.type,
@@ -74,6 +93,7 @@ def create_session(data: SessionCreate, session: Session = Depends(get_session))
     
     # Create PipelineRun
     pipeline_run = PipelineRun(
+        organization_id=auth.org_id,
         brief_id=brief.id,
         deliverable_id=deliverable.id,
         title=data.title,
@@ -93,24 +113,46 @@ def create_session(data: SessionCreate, session: Session = Depends(get_session))
     }
 
 @router.get("")
-def list_sessions(session: Session = Depends(get_session)):
+def list_sessions(
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     sessions = session.exec(
         select(PipelineRun)
-        .where(PipelineRun.deleted == False)
+        .where(
+            (PipelineRun.deleted == False) & (PipelineRun.organization_id == auth.org_id)
+        )
         .order_by(PipelineRun.created_at.desc())
     ).all()
     return sessions
 
 @router.get("/{session_id}")
-def get_session_by_id(session_id: int, session: Session = Depends(get_session)):
-    s = session.get(PipelineRun, session_id)
+def get_session_by_id(
+    session_id: int,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    s = session.exec(
+        select(PipelineRun).where(
+            (PipelineRun.id == session_id) & (PipelineRun.organization_id == auth.org_id)
+        )
+    ).first()
     if not s or s.deleted:
         raise HTTPException(status_code=404, detail="Session not found")
     return s
 
 @router.put("/{session_id}")
-def update_session(session_id: int, data: SessionUpdate, session: Session = Depends(get_session)):
-    s = session.get(PipelineRun, session_id)
+def update_session(
+    session_id: int,
+    data: SessionUpdate,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    s = session.exec(
+        select(PipelineRun).where(
+            (PipelineRun.id == session_id) & (PipelineRun.organization_id == auth.org_id)
+        )
+    ).first()
     if not s or s.deleted:
         raise HTTPException(status_code=404, detail="Session not found")
     for field, value in data.dict(exclude_none=True).items():
@@ -122,8 +164,16 @@ def update_session(session_id: int, data: SessionUpdate, session: Session = Depe
     return s
 
 @router.delete("/{session_id}")
-def delete_session(session_id: int, session: Session = Depends(get_session)):
-    s = session.get(PipelineRun, session_id)
+def delete_session(
+    session_id: int,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    s = session.exec(
+        select(PipelineRun).where(
+            (PipelineRun.id == session_id) & (PipelineRun.organization_id == auth.org_id)
+        )
+    ).first()
     if not s:
         raise HTTPException(status_code=404, detail="Session not found")
     s.deleted = True
@@ -133,8 +183,16 @@ def delete_session(session_id: int, session: Session = Depends(get_session)):
     return {"ok": True}
 
 @router.post("/{session_id}/run")
-async def run_session(session_id: int, session: Session = Depends(get_session)):
-    s = session.get(PipelineRun, session_id)
+async def run_session(
+    session_id: int,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    s = session.exec(
+        select(PipelineRun).where(
+            (PipelineRun.id == session_id) & (PipelineRun.organization_id == auth.org_id)
+        )
+    ).first()
     if not s or s.deleted:
         raise HTTPException(status_code=404, detail="Session not found")
     
