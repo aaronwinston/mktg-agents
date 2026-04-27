@@ -15,14 +15,17 @@ def create_test_org(org_name: str) -> tuple[str, str]:
     user_id = f"user_{uuid.uuid4().hex[:8]}"
     
     with Session(engine) as session:
-        org = Organization(id=org_id, name=org_name, slug=org_name.lower().replace(" ", "-"))
+        slug_base = org_name.lower().replace(" ", "-")
+        org = Organization(id=org_id, name=org_name, slug=f"{slug_base}-{org_id[:8]}")
+        session.add(org)
+        session.commit()
+
         membership = Membership(
             id=str(uuid.uuid4()),
             user_id=user_id,
             organization_id=org_id,
             role="owner"
         )
-        session.add(org)
         session.add(membership)
         session.commit()
     
@@ -30,12 +33,14 @@ def create_test_org(org_name: str) -> tuple[str, str]:
 
 def make_token(user_id: str, org_id: str, role: str = "member") -> str:
     """Create a test JWT token."""
+    from config import settings
+
     payload = {
         "sub": user_id,
         "org_id": org_id,
-        "role": role
+        "role": role,
     }
-    return jwt.encode(payload, "test-secret", algorithm="HS256")
+    return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm="HS256")
 
 def test_tenant_isolation_project_list():
     """User from org1 cannot see projects from org2."""

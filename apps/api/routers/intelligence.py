@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, BackgroundTasks
+from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException
 from sqlmodel import Session, select
 from database import get_session
 from models import ScrapeItem, SearchInsight, KeywordCluster
@@ -91,15 +91,19 @@ async def trigger_scrape(background_tasks: BackgroundTasks, session: Session = D
         scored = score_items_batch(items)
         synthesized = synthesize_items_batch(scored)
         with Session(session_bind) as s:
+            from models import Organization
+
+            default_org = s.exec(select(Organization).order_by(Organization.created_at)).first()
             for item_data in synthesized:
                 existing = s.exec(
-                    select(ScrapeItem).where(ScrapeItem.source_url == item_data.get("source_url", ""))
+                    select(ScrapeItem)
+                    .where(ScrapeItem.organization_id == default_org.id)
+                    .where(ScrapeItem.source_url == item_data.get("source_url", ""))
                 ).first()
                 if not existing and item_data.get("source_url"):
-                    item = ScrapeItem(**{
-                        k: v for k, v in item_data.items()
-                        if k in ScrapeItem.__fields__
-                    })
+                    payload = {k: v for k, v in item_data.items() if k in ScrapeItem.__fields__}
+                    payload.setdefault("organization_id", default_org.id)
+                    item = ScrapeItem(**payload)
                     s.add(item)
             s.commit()
 
@@ -190,7 +194,7 @@ def update_keyword_cluster(
         )
     ).first()
     if not cluster:
-        return {"error": f"Cluster {cluster_id} not found"}
+        raise HTTPException(status_code=404, detail="Cluster not found")
     
     if data.active is not None:
         cluster.active = data.active
@@ -216,7 +220,7 @@ def delete_keyword_cluster(
         )
     ).first()
     if not cluster:
-        return {"error": f"Cluster {cluster_id} not found"}
+        raise HTTPException(status_code=404, detail="Cluster not found")
     
     session.delete(cluster)
     session.commit()

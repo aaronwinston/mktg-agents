@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from sqlmodel import Session, select
 from database import engine
-from models import CalendarIntegration, CalendarEvent, CalendarSyncLog, Deliverable
+from models import CalendarIntegration, CalendarEvent, CalendarSyncLog, Deliverable, Organization
 from config import settings
 import asyncio
 
@@ -53,12 +53,14 @@ def create_event_atomic(
             raise ValueError(f"Deliverable {deliverable_id} not found")
         
         event = CalendarEvent(
+            organization_id=deliverable.organization_id,
             deliverable_id=deliverable_id,
             title=title,
             description=description,
             start_at=start_at,
             end_at=end_at,
             status="active",
+            sync_status="offline",
         )
         session.add(event)
         session.commit()
@@ -113,10 +115,10 @@ def sync_to_google(event_id: int) -> Dict[str, Any]:
             return {"status": "error", "error": "Event not found"}
         
         integration = session.exec(
-            select(CalendarIntegration).where(CalendarIntegration.user_id == "aaron")
+            select(CalendarIntegration).where(CalendarIntegration.organization_id == event.organization_id)
         ).first()
         if not integration:
-            _log_sync("push", event_id, "pending", "Google Calendar not connected")
+            _log_sync("push", event_id, "pending", "Google Calendar not connected", organization_id=event.organization_id)
             return {"status": "pending", "error": "Google Calendar not connected"}
         
         try:
@@ -189,7 +191,7 @@ def poll_from_google() -> Dict[str, Any]:
     """
     with Session(engine) as session:
         integration = session.exec(
-            select(CalendarIntegration).where(CalendarIntegration.user_id == "aaron")
+            select(CalendarIntegration).order_by(CalendarIntegration.created_at)
         ).first()
         
         if not integration:
@@ -274,7 +276,10 @@ def _apply_google_event(session: Session, integration: CalendarIntegration, goog
     google_event_id = google_event["id"]
     
     local_event = session.exec(
-        select(CalendarEvent).where(CalendarEvent.google_event_id == google_event_id)
+        select(CalendarEvent).where(
+            (CalendarEvent.organization_id == integration.organization_id)
+            & (CalendarEvent.google_event_id == google_event_id)
+        )
     ).first()
     
     if google_event.get("status") == "cancelled":
@@ -380,19 +385,26 @@ def _get_valid_credentials(integration: CalendarIntegration, session: Session) -
     )
 
 
-def _log_sync(operation: str, event_id: Optional[int], status: str, error_msg: Optional[str] = None, details: Optional[str] = None):
-    """
-    Log a sync operation to CalendarSyncLog for audit trail.
-    
-    Args:
-        operation: push_insert, push_update, poll, poll_delete, poll_conflict, poll_update, etc.
-        event_id: CalendarEvent.id (None for poll operations)
-        status: success, error, pending, resolved_local
-        error_msg: Error message (if status=error)
-        details: JSON details about the operation
-    """
+def _log_sync(
+    operation: str,
+    event_id: Optional[int],
+    status: str,
+    error_msg: Optional[str] = None,
+    details: Optional[str] = None,
+    organization_id: Optional[str] = None,
+):
+    """Log a sync operation to CalendarSyncLog for audit trail."""
     with Session(engine) as session:
+        if organization_id is None and event_id is not None:
+            event = session.exec(select(CalendarEvent).where(CalendarEvent.id == event_id)).first()
+            organization_id = event.organization_id if event else None
+
+        if organization_id is None:
+            org = session.exec(select(Organization).order_by(Organization.created_at)).first()
+            organization_id = org.id
+
         log = CalendarSyncLog(
+            organization_id=organization_id,
             event_id=event_id,
             operation=operation,
             status=status,

@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from database import create_db_and_tables
-from routers import projects, chat, intelligence, settings, files, sessions, briefing, integrations, calendar, search, orgs, runtimes, billing, usage, onboarding, doctrine, mission_control, skills, trust, auth
+from routers import projects, chat, intelligence, settings as settings_router, files, sessions, briefing, integrations, calendar, search, orgs, runtimes, billing, usage, onboarding, doctrine, mission_control, skills, trust, auth
 from config import settings
 
 app = FastAPI(title="ForgeOS API", version="1.0.0")
@@ -26,7 +26,7 @@ app.include_router(auth.router)
 app.include_router(projects.router)
 app.include_router(chat.router)
 app.include_router(intelligence.router)
-app.include_router(settings.router)
+app.include_router(settings_router.router)
 app.include_router(files.router)
 app.include_router(sessions.router)
 app.include_router(briefing.router)
@@ -66,12 +66,19 @@ async def startup():
         items = await run_all_scrapers()
         scored = score_items_batch(items)
         with Session(engine) as session:
+            from models import Organization
+
+            default_org = session.exec(select(Organization).order_by(Organization.created_at)).first()
             for item_data in scored:
                 existing = session.exec(
-                    select(ScrapeItem).where(ScrapeItem.source_url == item_data.get("source_url", ""))
+                    select(ScrapeItem)
+                    .where(ScrapeItem.organization_id == default_org.id)
+                    .where(ScrapeItem.source_url == item_data.get("source_url", ""))
                 ).first()
                 if not existing and item_data.get("source_url"):
-                    item = ScrapeItem(**{k: v for k, v in item_data.items() if k in ScrapeItem.__fields__})
+                    payload = {k: v for k, v in item_data.items() if k in ScrapeItem.__fields__}
+                    payload.setdefault("organization_id", default_org.id)
+                    item = ScrapeItem(**payload)
                     session.add(item)
             session.commit()
 
