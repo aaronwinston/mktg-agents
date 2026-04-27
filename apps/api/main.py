@@ -81,6 +81,7 @@ from routers import (
     auth,
     audit as audit_router,
     jobs,
+    benchmark,
 )
 from config import settings
 from middleware.rate_limit import limiter, setup_rate_limiting
@@ -144,6 +145,7 @@ app.include_router(skills.router)
 app.include_router(trust.router)
 app.include_router(audit_router.router)
 app.include_router(jobs.router)
+app.include_router(benchmark.router)
 
 scheduler = AsyncIOScheduler()
 
