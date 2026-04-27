@@ -4,6 +4,7 @@ import { HeroSection } from '@/components/dashboard/HeroSection';
 import { BriefingBook } from '@/components/dashboard/BriefingBook';
 import { ActiveSessions } from '@/components/dashboard/ActiveSessions';
 import { NewSessionModal } from '@/components/dashboard/NewSessionModal';
+import { UpNext } from '@/components/dashboard/UpNext';
 import LetsBuildModal from '@/components/LetsBuildModal';
 import { Button } from '@/components/ui/Button';
 import { useState } from 'react';
@@ -13,13 +14,14 @@ export default function DashboardPage() {
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [showLetsBuildModal, setShowLetsBuildModal] = useState(false);
   const router = useRouter();
-  
+
   const handleLetsBuildSuccess = (deliverable: { id: number }) => {
     router.push(`/workspace/${deliverable.id}`);
   };
-  
+
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8">
+      {/* ── Hero + actions ── */}
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 space-y-4">
           <HeroSection />
@@ -32,10 +34,21 @@ export default function DashboardPage() {
           <Button onClick={() => setShowSessionModal(true)}>+ New session</Button>
         </div>
       </div>
-      
-      <ActiveSessions />
-      <BriefingBook />
-      
+
+      {/* ── Main content + Up Next sidebar ── */}
+      <div className="flex gap-8 items-start">
+        {/* Main column */}
+        <div className="flex-1 min-w-0 space-y-8">
+          <ActiveSessions />
+          <BriefingBook />
+        </div>
+
+        {/* Sidebar: Up Next (7 days) */}
+        <aside className="w-80 shrink-0">
+          <UpNext />
+        </aside>
+      </div>
+
       {showSessionModal && (
         <NewSessionModal
           onClose={() => setShowSessionModal(false)}
