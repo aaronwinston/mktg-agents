@@ -10,13 +10,24 @@ import { SkeletonCard } from '@/components/ui/SkeletonCard';
 export default function SessionsPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   
   const load = async () => {
-    setLoading(true);
-    const data = await getSessions();
-    setSessions(data);
-    setLoading(false);
+    try {
+      setLoading(true);
+      setError(null);
+      console.debug('[Sessions] Loading sessions...');
+      const data = await getSessions();
+      setSessions(data);
+      console.debug('[Sessions] Loaded', data.length, 'sessions');
+    } catch (err) {
+      const userMessage = 'Unable to load sessions. Check that the API is running and try again.';
+      setError(userMessage);
+      console.error('[Sessions] Load error:', err);
+    } finally {
+      setLoading(false);
+    }
   };
   
   useEffect(() => { load(); }, []);

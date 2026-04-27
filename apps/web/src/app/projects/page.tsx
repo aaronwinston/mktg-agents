@@ -8,12 +8,26 @@ import Link from 'next/link';
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  useEffect(() => {
-    getProjects()
-      .then(setProjects)
-      .finally(() => setLoading(false));
-  }, []);
+  const load = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.debug('[Projects] Loading projects...');
+      const data = await getProjects();
+      setProjects(data);
+      console.debug('[Projects] Loaded', data.length, 'projects');
+    } catch (err) {
+      const userMessage = 'Unable to load projects. Check that the API is running and try again.';
+      setError(userMessage);
+      console.error('[Projects] Load error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
   
   return (
     <div className="p-6 max-w-6xl mx-auto">

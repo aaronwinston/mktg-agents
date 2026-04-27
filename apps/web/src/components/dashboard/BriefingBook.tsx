@@ -22,39 +22,60 @@ export function BriefingBook() {
   const [refreshedAt, setRefreshedAt] = useState<number | null>(null);
   
   const load = useCallback(async () => {
-    setLoading(true);
-    const result = await getBriefing();
-    setLoading(false);
-    if (result.error === 'API_UNAVAILABLE') {
-      const health = await checkHealth();
-      if (!health.ok) {
-        setOffline(true);
-        setOfflineMessage('Start the local API on port 8000 to load your briefing feed.');
-      } else if (result.stories.length === 0) {
-        setOffline(true);
-        setOfflineMessage('No briefing items yet. Try refreshing.');
+    try {
+      setLoading(true);
+      const result = await getBriefing();
+      setLoading(false);
+      if (result.error === 'API_UNAVAILABLE') {
+        const health = await checkHealth();
+        if (!health.ok) {
+          setOffline(true);
+          setOfflineMessage('Unable to connect to the briefing API. Check that the local API is running on port 8000.');
+          console.debug('[BriefingBook] API unavailable - health check failed');
+        } else if (result.stories.length === 0) {
+          setOffline(true);
+          setOfflineMessage('No briefing items yet. Click refresh to fetch the latest stories.');
+          console.debug('[BriefingBook] API available but no stories');
+        } else {
+          setOffline(false);
+          setStories(result.stories);
+          setRefreshedAt(result.refreshed_at);
+          console.debug('[BriefingBook] Loaded', result.stories.length, 'stories');
+        }
       } else {
         setOffline(false);
         setStories(result.stories);
         setRefreshedAt(result.refreshed_at);
+        console.debug('[BriefingBook] Loaded', result.stories.length, 'stories');
       }
-    } else {
-      setOffline(false);
-      setStories(result.stories);
-      setRefreshedAt(result.refreshed_at);
+    } catch (err) {
+      setOffline(true);
+      setOfflineMessage('Error loading briefing. Check your connection and try again.');
+      console.error('[BriefingBook] Load error:', err);
     }
   }, []);
   
   useEffect(() => { load(); }, [load]);
   
   const handleRefresh = async () => {
-    setRefreshing(true);
-    const result = await refreshBriefing();
-    setRefreshing(false);
-    if (result.stories.length > 0) {
-      setOffline(false);
-      setStories(result.stories);
-      setRefreshedAt(result.refreshed_at);
+    try {
+      setRefreshing(true);
+      console.debug('[BriefingBook] Refreshing briefing feed...');
+      const result = await refreshBriefing();
+      if (result.stories.length > 0) {
+        setOffline(false);
+        setStories(result.stories);
+        setRefreshedAt(result.refreshed_at);
+        console.debug('[BriefingBook] Refresh successful. Loaded', result.stories.length, 'stories');
+      } else {
+        console.debug('[BriefingBook] Refresh returned no stories');
+      }
+    } catch (err) {
+      setOffline(true);
+      setOfflineMessage('Failed to refresh briefing. Check your connection and try again.');
+      console.error('[BriefingBook] Refresh error:', err);
+    } finally {
+      setRefreshing(false);
     }
   };
   
