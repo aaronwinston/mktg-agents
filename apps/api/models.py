@@ -370,3 +370,17 @@ class AuditEvent(SQLModel, table=True):
         Index('idx_audit_action', 'action', 'created_at'),
     )
 
+class DoctrineVersion(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    organization_id: str = Field(foreign_key="organization.id")
+    file_path: str  # e.g., "core/VOICE.md", "context/02_narrative/messaging-framework.md"
+    content_hash: str  # SHA256 hash of content
+    content: str  # Full file content
+    saved_by_user_id: str
+    locked_by_user_id: Optional[str] = None  # For team plan file locking
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    __table_args__ = (
+        Index('idx_doctrine_org_path_time', 'organization_id', 'file_path', 'created_at'),
+        Index('idx_doctrine_org_time', 'organization_id', 'created_at'),
+    )
