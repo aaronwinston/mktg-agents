@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select
 from database import get_session
@@ -8,6 +8,8 @@ from models import ChatSession, ChatMessage, ScrapeItem, Brief
 from services.generation import stream_chat, generate_brief, execute_playbook, CONTENT_TYPE_TO_PLAYBOOK
 from services.usage import UsageTracker
 from middleware.auth import get_current_user, AuthContext
+from middleware.rate_limit import limiter, global_rate_limit_key
+from config import settings
 from pydantic import BaseModel
 from typing import Optional
 
@@ -84,7 +86,14 @@ def get_messages(
     return msgs
 
 @router.post("/stream")
+@limiter.limit(
+    settings.RATE_LIMIT_EXPENSIVE_GLOBAL,
+    key_func=global_rate_limit_key,
+    override_defaults=False,
+)
 async def chat_stream(
+    request: Request,
+    response: Response,
     req: ChatRequest,
     auth: AuthContext = Depends(get_current_user),
     session: Session = Depends(get_session)
@@ -175,7 +184,14 @@ async def chat_stream(
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @router.post("/brief")
+@limiter.limit(
+    settings.RATE_LIMIT_EXPENSIVE_GLOBAL,
+    key_func=global_rate_limit_key,
+    override_defaults=False,
+)
 async def generate_brief_endpoint(
+    request: Request,
+    response: Response,
     req: BriefRequest,
     auth: AuthContext = Depends(get_current_user),
     session: Session = Depends(get_session)
@@ -209,7 +225,14 @@ async def generate_brief_endpoint(
     return {"brief_id": b.id, "brief_md": brief_md}
 
 @router.post("/generate")
+@limiter.limit(
+    settings.RATE_LIMIT_EXPENSIVE_GLOBAL,
+    key_func=global_rate_limit_key,
+    override_defaults=False,
+)
 async def generate_deliverable(
+    request: Request,
+    response: Response,
     req: GenerateRequest,
     auth: AuthContext = Depends(get_current_user),
 ):

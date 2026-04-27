@@ -9,7 +9,7 @@ configure_logging()
 # Register audit listeners (SQLAlchemy session hooks)
 import audit as audit_trail  # noqa: F401
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -169,5 +169,5 @@ async def shutdown():
 
 @app.get("/api/health")
 @limiter.limit(settings.RATE_LIMIT_PUBLIC)
-def health(request: Request):
+def health(request: Request, response: Response):
     return {"status": "ok", "version": "1.0.0"}

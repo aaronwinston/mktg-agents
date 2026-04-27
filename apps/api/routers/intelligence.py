@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException
+from fastapi import APIRouter, Depends, BackgroundTasks, HTTPException, Request, Response
 from sqlmodel import Session, select
 from database import get_session
 from models import ScrapeItem, SearchInsight, KeywordCluster
@@ -8,6 +8,8 @@ from services.scoring import score_items_batch, synthesize_items_batch
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel
+from middleware.rate_limit import limiter, global_rate_limit_key
+from config import settings
 
 class KeywordClusterInput(BaseModel):
     keyword: str
@@ -83,7 +85,17 @@ def use_as_context(
     return {"ok": True, "item_id": item_id}
 
 @router.post("/scrape")
-async def trigger_scrape(background_tasks: BackgroundTasks, session: Session = Depends(get_session)):
+@limiter.limit(
+    settings.RATE_LIMIT_EXPENSIVE_GLOBAL,
+    key_func=global_rate_limit_key,
+    override_defaults=False,
+)
+async def trigger_scrape(
+    request: Request,
+    response: Response,
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_session),
+):
     session_bind = session.bind
 
     async def run():
@@ -111,7 +123,8 @@ async def trigger_scrape(background_tasks: BackgroundTasks, session: Session = D
     return {"ok": True, "message": "Scrape started in background"}
 
 @router.get("/config")
-def get_config():
+@limiter.limit(settings.RATE_LIMIT_PUBLIC)
+def get_config(request: Request, response: Response):
     return {
         "hn_keywords": ["LLM observability", "AI agents", "eval harness", "arize", "phoenix"],
         "hn_min_points": 50,

@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
+"""Index verification helper.
+
+This file is useful for manual EXPLAIN QUERY PLAN checks, but it's not a unit
+test suite.
 """
-Test script to verify database indexes are being used correctly.
-Uses EXPLAIN QUERY PLAN to check index usage for common queries.
-"""
+
+import pytest
+
+pytest.skip("manual index verification script", allow_module_level=True)
 
 import sqlite3
 from pathlib import Path

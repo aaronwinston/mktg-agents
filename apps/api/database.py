@@ -272,6 +272,22 @@ def run_migrations(database_url: Optional[str] = None) -> None:
             conn.executescript(sql_text)
             conn.execute("INSERT INTO schema_migrations(version) VALUES (?)", (version,))
             conn.execute("COMMIT")
+
+        # Migration 0003: Audit log table
+        version = "0003_auditlog"
+        already = conn.execute(
+            "SELECT 1 FROM schema_migrations WHERE version=?", (version,)
+        ).fetchone()
+        if not already:
+            sql_path = migrations_dir / f"{version}.sql"
+            if not sql_path.exists():
+                raise FileNotFoundError(f"Missing migration file: {sql_path}")
+
+            conn.execute("BEGIN")
+            sql_text = sql_path.read_text(encoding="utf-8")
+            conn.executescript(sql_text)
+            conn.execute("INSERT INTO schema_migrations(version) VALUES (?)", (version,))
+            conn.execute("COMMIT")
     except Exception:
         conn.execute("ROLLBACK")
         raise
@@ -284,13 +300,21 @@ def create_db_and_tables():
     # Import all models to ensure they're registered (and for create_all fallback)
     import models  # noqa: F401
 
-    # Run Alembic migrations for version-controlled schema changes
+    # Prefer Alembic when it is actually managing schema.
     try:
         from migration_runner import run_pending_migrations
+
         run_pending_migrations()
     except Exception as e:
-        # Fall back to the legacy migration system if Alembic fails
         import logging
+
         logger = logging.getLogger(__name__)
-        logger.warning(f"Alembic migration failed, falling back to legacy migrations: {e}")
+        logger.warning(
+            f"Alembic migration failed, falling back to legacy migrations: {e}"
+        )
         run_migrations()
+        return
+
+    # Ensure legacy SQL migrations are applied (covers base schema + incremental additions
+    # like AuditLog). For now, Alembic migrations in this repo are effectively no-op.
+    run_migrations()

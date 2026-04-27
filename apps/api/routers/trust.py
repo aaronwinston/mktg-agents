@@ -1,10 +1,12 @@
 """Trust, security, legal, and compliance endpoints."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
 from sqlmodel import Session, select
 from database import get_session
 from models import Organization, AuditEvent, Membership
 from middleware.auth import get_current_user, AuthContext
+from middleware.rate_limit import limiter, global_rate_limit_key
+from config import settings
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timedelta
@@ -21,7 +23,8 @@ class DataDeletionRequest(BaseModel):
     confirm_deletion: bool
 
 @router.get("/legal/privacy")
-async def get_privacy_policy():
+@limiter.limit(settings.RATE_LIMIT_PUBLIC)
+async def get_privacy_policy(request: Request, response: Response):
     """Return privacy policy."""
     return {
         "title": "Privacy Policy",
@@ -57,7 +60,8 @@ ForgeOS respects your privacy. We collect only what's necessary to operate the s
     }
 
 @router.get("/legal/terms")
-async def get_terms_of_service():
+@limiter.limit(settings.RATE_LIMIT_PUBLIC)
+async def get_terms_of_service(request: Request, response: Response):
     """Return terms of service."""
     return {
         "title": "Terms of Service",
@@ -84,7 +88,8 @@ By using ForgeOS, you agree to:
     }
 
 @router.get("/legal/dpa")
-async def get_data_processing_agreement():
+@limiter.limit(settings.RATE_LIMIT_PUBLIC)
+async def get_data_processing_agreement(request: Request, response: Response):
     """Return Data Processing Agreement (GDPR/CCPA compliance)."""
     return {
         "title": "Data Processing Agreement",
@@ -115,7 +120,14 @@ Contact: dpa@forgeos.example"""
     }
 
 @router.post("/export")
+@limiter.limit(
+    settings.RATE_LIMIT_EXPENSIVE_GLOBAL,
+    key_func=global_rate_limit_key,
+    override_defaults=False,
+)
 async def export_user_data(
+    request: Request,
+    response: Response,
     req: DataExportRequest,
     auth: AuthContext = Depends(get_current_user),
     session: Session = Depends(get_session),
@@ -174,7 +186,14 @@ async def export_user_data(
     return export
 
 @router.post("/delete")
+@limiter.limit(
+    settings.RATE_LIMIT_EXPENSIVE_GLOBAL,
+    key_func=global_rate_limit_key,
+    override_defaults=False,
+)
 async def schedule_account_deletion(
+    request: Request,
+    response: Response,
     req: DataDeletionRequest,
     auth: AuthContext = Depends(get_current_user),
     session: Session = Depends(get_session),
@@ -210,12 +229,14 @@ async def schedule_account_deletion(
     audit = AuditEvent(
         organization_id=auth.org_id,
         user_id=auth.user_id,
-        action="data_deleted",
-        resource_type="account",
-        details_json=json_lib.dumps({
-            "grace_period_days": 30,
-            "scheduled_at": deletion_scheduled_at.isoformat()
-        })
+        action="account_deletion_scheduled",
+        resource_type="user_data",
+        details_json=json_lib.dumps(
+            {
+                "grace_period_days": 30,
+                "scheduled_at": deletion_scheduled_at.isoformat(),
+            }
+        ),
     )
     session.add(audit)
     session.commit()
@@ -228,7 +249,8 @@ async def schedule_account_deletion(
     }
 
 @router.get("/status")
-async def get_service_status():
+@limiter.limit(settings.RATE_LIMIT_PUBLIC)
+async def get_service_status(request: Request, response: Response):
     """Return ForgeOS service status and uptime."""
     return {
         "status": "operational",

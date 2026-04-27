@@ -538,6 +538,34 @@ class FeatureFlag(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class AuditLog(SQLModel, table=True):
+    __table_args__ = (
+        CheckConstraint(
+            "operation IN ('CREATE','UPDATE','DELETE')",
+            name="ck_auditlog_operation",
+        ),
+        Index("idx_auditlog_org_time", "organization_id", "created_at"),
+        Index("idx_auditlog_table_record", "table_name", "record_id", "created_at"),
+        Index("idx_auditlog_user_time", "user_id", "created_at"),
+    )
+
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    organization_id: str = Field(foreign_key="organization.id")
+    user_id: Optional[str] = None
+
+    operation: str
+    table_name: str
+    record_id: Optional[str] = None
+
+    old_values_json: Optional[str] = None
+    new_values_json: Optional[str] = None
+
+    request_method: Optional[str] = None
+    request_path: Optional[str] = None
+
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class AuditEvent(SQLModel, table=True):
     __table_args__ = (
         CheckConstraint(

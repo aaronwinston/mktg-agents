@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException, status, Response
+from fastapi import APIRouter, HTTPException, status, Response, Request
 from pydantic import BaseModel, EmailStr
 import jwt
 from datetime import datetime, timedelta
 from config import settings
+from middleware.rate_limit import limiter
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -35,19 +36,20 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
     return encoded_jwt
 
 @router.post("/signup", response_model=AuthResponse)
-async def signup(request: SignUpRequest, response: Response):
+@limiter.limit(settings.RATE_LIMIT_AUTH)
+async def signup(request: Request, data: SignUpRequest, response: Response):
     """Sign up a new user and return auth token in httpOnly cookie."""
-    
+
     # Generate IDs (in production, this would create actual user records)
-    org_id = 'org_' + request.email.split('@')[0] + '_' + datetime.utcnow().strftime('%Y%m%d%H%M%S')
-    user_id = request.email.split('@')[0]
-    
+    org_id = "org_" + data.email.split("@")[0] + "_" + datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    user_id = data.email.split("@")[0]
+
     # Create JWT payload
     payload = {
         "sub": user_id,
         "org_id": org_id,
         "role": "owner",
-        "email": request.email,
+        "email": data.email,
     }
     
     # Create access token
@@ -78,24 +80,25 @@ async def signup(request: SignUpRequest, response: Response):
     return AuthResponse(
         user_id=user_id,
         org_id=org_id,
-        email=request.email,
+        email=data.email,
     )
 
 @router.post("/signin", response_model=AuthResponse)
-async def signin(request: SignInRequest, response: Response):
+@limiter.limit(settings.RATE_LIMIT_AUTH)
+async def signin(request: Request, data: SignInRequest, response: Response):
     """Sign in an existing user and return auth token in httpOnly cookie."""
-    
+
     # In production, verify credentials against database
     # For now, accept any credentials and create a mock session
-    org_id = 'org_' + request.email.split('@')[0] + '_' + datetime.utcnow().strftime('%Y%m%d%H%M%S')
-    user_id = request.email.split('@')[0]
-    
+    org_id = "org_" + data.email.split("@")[0] + "_" + datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    user_id = data.email.split("@")[0]
+
     # Create JWT payload
     payload = {
         "sub": user_id,
         "org_id": org_id,
         "role": "owner",
-        "email": request.email,
+        "email": data.email,
     }
     
     # Create access token
@@ -126,11 +129,12 @@ async def signin(request: SignInRequest, response: Response):
     return AuthResponse(
         user_id=user_id,
         org_id=org_id,
-        email=request.email,
+        email=data.email,
     )
 
 @router.post("/signout")
-async def signout(response: Response):
+@limiter.limit(settings.RATE_LIMIT_AUTH)
+async def signout(request: Request, response: Response):
     """Sign out user by clearing auth cookies."""
     
     response.delete_cookie(key="auth_token", path="/")

@@ -2,6 +2,8 @@ from fastapi import Depends, HTTPException, status, Header, Request
 from typing import Optional
 import jwt
 
+from audit import set_audit_context
+
 class AuthContext:
     def __init__(self, user_id: str, org_id: str, role: str):
         self.user_id = user_id
@@ -38,8 +40,16 @@ def get_current_user(
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No organization")
         
         role = payload.get("role", "member")
-        
-        return AuthContext(user_id=user_id, org_id=org_id, role=role)
+
+        ctx = AuthContext(user_id=user_id, org_id=org_id, role=role)
+        request.state.auth = ctx
+        set_audit_context(
+            user_id=user_id,
+            org_id=org_id,
+            request_method=request.method,
+            request_path=request.url.path,
+        )
+        return ctx
         
     except jwt.DecodeError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")

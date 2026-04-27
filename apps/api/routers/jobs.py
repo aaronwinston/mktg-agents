@@ -1,11 +1,32 @@
-"""Health checks and monitoring for background jobs."""
+"""Health checks and monitoring for background jobs.
+
+Note: Celery/Redis are optional in some dev/test environments. This module degrades
+gracefully when those dependencies aren't installed.
+"""
 
 from fastapi import APIRouter, HTTPException
-from celery.result import AsyncResult
-from celery_app import celery_app
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
-import redis
+
+try:
+    from celery.result import AsyncResult
+    from celery_app import celery_app
+    import redis
+
+    _CELERY_AVAILABLE = True
+except Exception:  # pragma: no cover
+    AsyncResult = None  # type: ignore[assignment]
+    celery_app = None  # type: ignore[assignment]
+    redis = None  # type: ignore[assignment]
+    _CELERY_AVAILABLE = False
+
+
+def _require_celery() -> None:
+    if not _CELERY_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Background jobs are unavailable (Celery/Redis dependencies not installed)",
+        )
 
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
@@ -28,9 +49,20 @@ class SystemHealth(BaseModel):
 @router.get("/health", response_model=SystemHealth)
 async def health_check():
     """Check health of job queue system."""
+
+    if not _CELERY_AVAILABLE:
+        return SystemHealth(
+            status="unavailable",
+            redis_connected=False,
+            active_workers=0,
+            registered_tasks=0,
+            queues={},
+        )
+
     try:
         # Check Redis connection
         from config import settings
+
         r = redis.from_url(settings.CELERY_BROKER_URL)
         redis_connected = r.ping()
     except Exception:
@@ -72,6 +104,8 @@ async def health_check():
 @router.get("/task/{task_id}", response_model=TaskStatus)
 async def get_task_status(task_id: str):
     """Get status of a specific task."""
+
+    _require_celery()
     result = AsyncResult(task_id, app=celery_app)
     
     return TaskStatus(
@@ -85,6 +119,8 @@ async def get_task_status(task_id: str):
 @router.post("/trigger/{task_name}")
 async def trigger_task(task_name: str):
     """Manually trigger a task."""
+
+    _require_celery()
     full_task_name = f"tasks.{task_name}" if not task_name.startswith("tasks.") else task_name
     
     task = celery_app.tasks.get(full_task_name)
@@ -106,6 +142,8 @@ async def trigger_task(task_name: str):
 @router.get("/workers")
 async def get_workers():
     """Get information about active workers."""
+
+    _require_celery()
     inspect = celery_app.control.inspect()
     
     stats = inspect.stats()
@@ -129,6 +167,8 @@ async def get_workers():
 @router.get("/schedule")
 async def get_schedule():
     """Get beat schedule information."""
+
+    _require_celery()
     schedule = []
     for name, config in celery_app.conf.beat_schedule.items():
         schedule.append({
