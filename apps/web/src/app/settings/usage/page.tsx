@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { getApiBase } from '@/lib/api';
 
 interface UsageData {
   period: string;
@@ -26,8 +27,8 @@ export default function UsageSettings() {
 
   const fetchUsage = async () => {
     try {
-      const res = await fetch('/api/usage/current-month', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+      const res = await fetch(`${getApiBase()}/api/usage/current-month`, {
+        credentials: 'include'
       });
       
       if (res.ok) {
@@ -35,6 +36,7 @@ export default function UsageSettings() {
       } else {
         setError('Failed to load usage data');
       }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       setError('Error loading usage data');
     } finally {

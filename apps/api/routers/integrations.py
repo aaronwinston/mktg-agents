@@ -187,6 +187,7 @@ def _retry_offline_events(session: Session, integration: CalendarIntegration):
     from models import CalendarEvent
     offline_events = session.exec(
         select(CalendarEvent).where(
+            CalendarEvent.organization_id == integration.organization_id,
             CalendarEvent.sync_status == "offline",
             CalendarEvent.synced_to_google_at == None,
         )

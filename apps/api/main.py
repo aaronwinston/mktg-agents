@@ -2,26 +2,115 @@
 import instrumentation
 instrumentation.setup_tracing()
 
-from fastapi import FastAPI
+from logging_config import configure_logging
+
+configure_logging()
+
+# Setup Sentry error tracking (P4.2) before importing routers
+def setup_sentry():
+    """Initialize Sentry error tracking and performance monitoring."""
+    from config import settings
+    
+    if not settings.SENTRY_DSN:
+        return None
+    
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+        from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+        from sentry_sdk.integrations.celery import CeleryIntegration
+        
+        sentry_sdk.init(
+            dsn=settings.SENTRY_DSN,
+            integrations=[
+                FastApiIntegration(),
+                SqlalchemyIntegration(),
+                CeleryIntegration(),
+            ],
+            environment=settings.SENTRY_ENVIRONMENT,
+            traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
+            profiles_sample_rate=settings.SENTRY_PROFILE_SAMPLE_RATE,
+            attach_stacktrace=True,
+        )
+        
+        import logging
+        logging.getLogger(__name__).info(
+            f"Sentry initialized — environment: {settings.SENTRY_ENVIRONMENT}, "
+            f"traces sampling: {settings.SENTRY_TRACES_SAMPLE_RATE * 100:.0f}%"
+        )
+        return sentry_sdk
+    
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Sentry setup failed (non-fatal): {e}")
+        return None
+
+setup_sentry()
+
+# Register audit listeners (SQLAlchemy session hooks)
+import audit as audit_trail  # noqa: F401
+
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
+
 from database import create_db_and_tables
-from routers import projects, chat, intelligence, settings, files, sessions, briefing, integrations, calendar, search, orgs, runtimes, billing, usage, onboarding, doctrine, mission_control, skills, trust
+from middleware.request_logging import RequestLoggingMiddleware
+from middleware.csrf import CSRFMiddleware
+from routers import (
+    projects,
+    chat,
+    intelligence,
+    settings as settings_router,
+    files,
+    sessions,
+    briefing,
+    integrations,
+    calendar,
+    search,
+    orgs,
+    runtimes,
+    billing,
+    usage,
+    onboarding,
+    doctrine,
+    mission_control,
+    skills,
+    trust,
+    auth,
+    audit as audit_router,
+    jobs,
+)
+from config import settings
+from middleware.rate_limit import limiter, setup_rate_limiting
 
 app = FastAPI(title="ForgeOS API", version="1.0.0")
 
+setup_rate_limiting(app)
+
+# Request/response logging (method, path, status, latency, sizes, auth context)
+app.add_middleware(RequestLoggingMiddleware)
+
+# CSRF protection middleware (before CORS to validate before cross-origin handling)
+app.add_middleware(CSRFMiddleware)
+
+# Parse CORS allowed origins from comma-separated env var
+allowed_origins = [origin.strip() for origin in settings.CORS_ALLOWED_ORIGINS.split(",") if origin.strip()]
+
+# Add CORS after rate limiting so CORS headers are present even on 429 responses.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001", "*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+app.include_router(auth.router)
 app.include_router(projects.router)
 app.include_router(chat.router)
 app.include_router(intelligence.router)
-app.include_router(settings.router)
+app.include_router(settings_router.router)
 app.include_router(files.router)
 app.include_router(sessions.router)
 app.include_router(briefing.router)
@@ -37,6 +126,8 @@ app.include_router(doctrine.router)
 app.include_router(mission_control.router)
 app.include_router(skills.router)
 app.include_router(trust.router)
+app.include_router(audit_router.router)
+app.include_router(jobs.router)
 
 scheduler = AsyncIOScheduler()
 
@@ -61,12 +152,19 @@ async def startup():
         items = await run_all_scrapers()
         scored = score_items_batch(items)
         with Session(engine) as session:
+            from models import Organization
+
+            default_org = session.exec(select(Organization).order_by(Organization.created_at)).first()
             for item_data in scored:
                 existing = session.exec(
-                    select(ScrapeItem).where(ScrapeItem.source_url == item_data.get("source_url", ""))
+                    select(ScrapeItem)
+                    .where(ScrapeItem.organization_id == default_org.id)
+                    .where(ScrapeItem.source_url == item_data.get("source_url", ""))
                 ).first()
                 if not existing and item_data.get("source_url"):
-                    item = ScrapeItem(**{k: v for k, v in item_data.items() if k in ScrapeItem.__fields__})
+                    payload = {k: v for k, v in item_data.items() if k in ScrapeItem.__fields__}
+                    payload.setdefault("organization_id", default_org.id)
+                    item = ScrapeItem(**payload)
                     session.add(item)
             session.commit()
 
@@ -115,5 +213,49 @@ async def shutdown():
     scheduler.shutdown()
 
 @app.get("/api/health")
-def health():
-    return {"status": "ok", "version": "1.0.0"}
+@limiter.limit(settings.RATE_LIMIT_PUBLIC)
+def health(request: Request, response: Response):
+    """
+    Health check endpoint with database and service connectivity checks.
+    Provides observability into system state for monitoring/alerting.
+    """
+    from database import get_session
+    
+    health_status = {
+        "status": "ok",
+        "version": "1.0.0",
+        "checks": {
+            "database": "unknown",
+            "redis": "unknown",
+        }
+    }
+    
+    # Check database connectivity
+    try:
+        session = next(get_session())
+        from sqlmodel import select
+        from models import Organization
+        session.exec(select(Organization).limit(1)).first()
+        session.close()
+        health_status["checks"]["database"] = "ok"
+    except Exception as e:
+        health_status["checks"]["database"] = f"error: {str(e)}"
+        health_status["status"] = "degraded"
+    
+    # Check Redis connectivity (for caching and Celery)
+    try:
+        import redis
+        client = redis.from_url(settings.REDIS_URL, socket_connect_timeout=2)
+        client.ping()
+        health_status["checks"]["redis"] = "ok"
+    except Exception as e:
+        health_status["checks"]["redis"] = f"warning: {str(e)}"
+        # Don't mark as degraded if Redis is down (it's optional for caching)
+    
+    # Check Celery (scheduler)
+    if scheduler and scheduler.running:
+        health_status["checks"]["scheduler"] = "ok"
+    else:
+        health_status["checks"]["scheduler"] = "warning: not running"
+    
+    return health_status

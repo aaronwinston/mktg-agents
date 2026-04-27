@@ -43,7 +43,9 @@ async def create_org(
         plan="free",
     )
     session.add(org)
-    
+    session.commit()
+    session.refresh(org)
+
     membership = Membership(
         id=str(uuid.uuid4()),
         user_id=auth.user_id,
@@ -52,7 +54,6 @@ async def create_org(
     )
     session.add(membership)
     session.commit()
-    session.refresh(org)
     
     return OrgResponse(
         id=org.id,

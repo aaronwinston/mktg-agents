@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlmodel import Session, select
 from database import get_session
 from models import Project, Folder, Deliverable, Brief, ScrapeItem
@@ -7,6 +7,8 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 import json
+from monitoring import time_operation, trace_operation
+from services.query_optimization import PaginationParams, add_pagination
 
 router = APIRouter(prefix="/api", tags=["projects"])
 
@@ -15,13 +17,19 @@ class ProjectCreate(BaseModel):
     description: Optional[str] = None
 
 @router.get("/projects")
+@trace_operation("list_projects")
 def list_projects(
     auth: AuthContext = Depends(get_current_user),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
 ):
-    return session.exec(
-        select(Project).where(Project.organization_id == auth.org_id)
-    ).all()
+    """List projects for authenticated user's organization with pagination."""
+    with time_operation("db_query", attributes={"table": "project", "operation": "list"}):
+        pagination = PaginationParams(skip=skip, limit=limit)
+        query = select(Project).where(Project.organization_id == auth.org_id)
+        query = add_pagination(query, pagination)
+        return session.exec(query).all()
 
 @router.post("/projects")
 def create_project(
@@ -162,8 +170,16 @@ def create_folder(
     return f
 
 @router.delete("/folders/{folder_id}")
-def delete_folder(folder_id: int, session: Session = Depends(get_session)):
-    f = session.get(Folder, folder_id)
+def delete_folder(
+    folder_id: int,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    f = session.exec(
+        select(Folder).where(
+            (Folder.id == folder_id) & (Folder.organization_id == auth.org_id)
+        )
+    ).first()
     if not f:
         raise HTTPException(status_code=404, detail="Folder not found")
     session.delete(f)
@@ -184,36 +200,78 @@ class DeliverableUpdate(BaseModel):
     body_md: Optional[str] = None
 
 @router.get("/folders/{folder_id}/deliverables")
-def list_deliverables(folder_id: int, session: Session = Depends(get_session)):
-    return session.exec(select(Deliverable).where(Deliverable.folder_id == folder_id)).all()
+def list_deliverables(
+    folder_id: int,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    # Verify folder belongs to org
+    folder = session.exec(
+        select(Folder).where(
+            (Folder.id == folder_id) & (Folder.organization_id == auth.org_id)
+        )
+    ).first()
+    if not folder:
+        raise HTTPException(status_code=404, detail="Folder not found")
+    
+    return session.exec(
+        select(Deliverable).where(
+            (Deliverable.folder_id == folder_id) & (Deliverable.organization_id == auth.org_id)
+        )
+    ).all()
 
 @router.post("/deliverables")
-def create_deliverable(data: DeliverableCreate, session: Session = Depends(get_session)):
+def create_deliverable(
+    data: DeliverableCreate,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     # Get or create default folder if not specified
     if not data.folder_id:
         project = session.exec(
-            select(Project).where(Project.user_id == "aaron")
+            select(Project).where(
+                (Project.user_id == auth.user_id) & (Project.organization_id == auth.org_id)
+            )
         ).first()
         if not project:
-            project = Project(user_id="aaron", name="Default Project")
+            project = Project(
+                user_id=auth.user_id,
+                organization_id=auth.org_id,
+                name="Default Project"
+            )
             session.add(project)
             session.commit()
             session.refresh(project)
         
         folder = session.exec(
-            select(Folder).where(Folder.project_id == project.id)
+            select(Folder).where(
+                (Folder.project_id == project.id) & (Folder.organization_id == auth.org_id)
+            )
         ).first()
         if not folder:
-            folder = Folder(project_id=project.id, name="Deliverables")
+            folder = Folder(
+                project_id=project.id,
+                organization_id=auth.org_id,
+                name="Deliverables"
+            )
             session.add(folder)
             session.commit()
             session.refresh(folder)
         folder_id = folder.id
     else:
+        # Verify folder belongs to org
+        folder = session.exec(
+            select(Folder).where(
+                (Folder.id == data.folder_id) & (Folder.organization_id == auth.org_id)
+            )
+        ).first()
+        if not folder:
+            raise HTTPException(status_code=404, detail="Folder not found")
         folder_id = data.folder_id
     
     d = Deliverable(
         folder_id=folder_id,
+        organization_id=auth.org_id,
         content_type=data.content_type,
         title=data.title,
         status=data.status,
@@ -225,15 +283,32 @@ def create_deliverable(data: DeliverableCreate, session: Session = Depends(get_s
     return d
 
 @router.get("/deliverables/{deliverable_id}")
-def get_deliverable(deliverable_id: int, session: Session = Depends(get_session)):
-    d = session.get(Deliverable, deliverable_id)
+def get_deliverable(
+    deliverable_id: int,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    d = session.exec(
+        select(Deliverable).where(
+            (Deliverable.id == deliverable_id) & (Deliverable.organization_id == auth.org_id)
+        )
+    ).first()
     if not d:
         raise HTTPException(status_code=404, detail="Deliverable not found")
     return d
 
 @router.put("/deliverables/{deliverable_id}")
-def update_deliverable(deliverable_id: int, data: DeliverableUpdate, session: Session = Depends(get_session)):
-    d = session.get(Deliverable, deliverable_id)
+def update_deliverable(
+    deliverable_id: int,
+    data: DeliverableUpdate,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    d = session.exec(
+        select(Deliverable).where(
+            (Deliverable.id == deliverable_id) & (Deliverable.organization_id == auth.org_id)
+        )
+    ).first()
     if not d:
         raise HTTPException(status_code=404, detail="Deliverable not found")
     update_data = data.dict(exclude_unset=True)
@@ -246,8 +321,16 @@ def update_deliverable(deliverable_id: int, data: DeliverableUpdate, session: Se
     return d
 
 @router.delete("/deliverables/{deliverable_id}")
-def delete_deliverable(deliverable_id: int, session: Session = Depends(get_session)):
-    d = session.get(Deliverable, deliverable_id)
+def delete_deliverable(
+    deliverable_id: int,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    d = session.exec(
+        select(Deliverable).where(
+            (Deliverable.id == deliverable_id) & (Deliverable.organization_id == auth.org_id)
+        )
+    ).first()
     if not d:
         raise HTTPException(status_code=404, detail="Deliverable not found")
     session.delete(d)
@@ -262,23 +345,53 @@ class BriefCreate(BaseModel):
     toggles_json: Optional[str] = None
 
 @router.post("/briefs")
-def create_brief(data: BriefCreate, session: Session = Depends(get_session)):
+def create_brief(
+    data: BriefCreate,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     # Get or create default project if not specified
     if not data.project_id:
         project = session.exec(
-            select(Project).where(Project.user_id == "aaron")
+            select(Project).where(
+                (Project.user_id == auth.user_id) & (Project.organization_id == auth.org_id)
+            )
         ).first()
         if not project:
-            project = Project(user_id="aaron", name="Default Project")
+            project = Project(
+                user_id=auth.user_id,
+                organization_id=auth.org_id,
+                name="Default Project"
+            )
             session.add(project)
             session.commit()
             session.refresh(project)
         project_id = project.id
     else:
+        # Verify project belongs to org
+        project = session.exec(
+            select(Project).where(
+                (Project.id == data.project_id) & (Project.organization_id == auth.org_id)
+            )
+        ).first()
+        if not project:
+            raise HTTPException(status_code=404, detail="Project not found")
         project_id = data.project_id
+    
+    # Verify deliverable if provided
+    if data.deliverable_id:
+        deliverable = session.exec(
+            select(Deliverable).where(
+                (Deliverable.id == data.deliverable_id) & (Deliverable.organization_id == auth.org_id)
+            )
+        ).first()
+        if not deliverable:
+            raise HTTPException(status_code=404, detail="Deliverable not found")
     
     b = Brief(
         project_id=project_id,
+        organization_id=auth.org_id,
+        user_id=auth.user_id,
         deliverable_id=data.deliverable_id,
         title=data.title or "Untitled Brief",
         brief_md=data.brief_md,
@@ -290,19 +403,61 @@ def create_brief(data: BriefCreate, session: Session = Depends(get_session)):
     return b
 
 @router.get("/briefs/{brief_id}")
-def get_brief(brief_id: int, session: Session = Depends(get_session)):
-    b = session.get(Brief, brief_id)
+def get_brief(
+    brief_id: int,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    b = session.exec(
+        select(Brief).where(
+            (Brief.id == brief_id) & (Brief.organization_id == auth.org_id)
+        )
+    ).first()
     if not b:
         raise HTTPException(status_code=404, detail="Brief not found")
     return b
 
 @router.get("/projects/{project_id}/briefs")
-def list_project_briefs(project_id: int, session: Session = Depends(get_session)):
-    return session.exec(select(Brief).where(Brief.project_id == project_id)).all()
+def list_project_briefs(
+    project_id: int,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    # Verify project belongs to org
+    project = session.exec(
+        select(Project).where(
+            (Project.id == project_id) & (Project.organization_id == auth.org_id)
+        )
+    ).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    
+    return session.exec(
+        select(Brief).where(
+            (Brief.project_id == project_id) & (Brief.organization_id == auth.org_id)
+        )
+    ).all()
 
 @router.get("/deliverables/{deliverable_id}/brief")
-def get_deliverable_brief(deliverable_id: int, session: Session = Depends(get_session)):
-    b = session.exec(select(Brief).where(Brief.deliverable_id == deliverable_id)).first()
+def get_deliverable_brief(
+    deliverable_id: int,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    # Verify deliverable belongs to org
+    deliverable = session.exec(
+        select(Deliverable).where(
+            (Deliverable.id == deliverable_id) & (Deliverable.organization_id == auth.org_id)
+        )
+    ).first()
+    if not deliverable:
+        raise HTTPException(status_code=404, detail="Deliverable not found")
+    
+    b = session.exec(
+        select(Brief).where(
+            (Brief.deliverable_id == deliverable_id) & (Brief.organization_id == auth.org_id)
+        )
+    ).first()
     if not b:
         return None
     return b
@@ -317,31 +472,49 @@ class WorkspaceFromItemRequest(BaseModel):
 @router.post("/workspace/from-briefing-item")
 def workspace_from_briefing_item(
     data: WorkspaceFromItemRequest,
+    auth: AuthContext = Depends(get_current_user),
     session: Session = Depends(get_session),
 ):
     """
     Create a Deliverable + Brief with a ScrapeItem pre-attached as context,
     then return the deliverable ID for workspace navigation.
     """
-    item = session.get(ScrapeItem, data.scrape_item_id)
+    # Verify scrape item belongs to org
+    item = session.exec(
+        select(ScrapeItem).where(
+            (ScrapeItem.id == data.scrape_item_id) & (ScrapeItem.organization_id == auth.org_id)
+        )
+    ).first()
     if not item:
         raise HTTPException(status_code=404, detail="Briefing item not found")
 
     # Get or create the default inbox project + folder
     project = session.exec(
-        select(Project).where(Project.user_id == "aaron")
+        select(Project).where(
+            (Project.user_id == auth.user_id) & (Project.organization_id == auth.org_id)
+        )
     ).first()
     if not project:
-        project = Project(user_id="aaron", name="Default Project")
+        project = Project(
+            user_id=auth.user_id,
+            organization_id=auth.org_id,
+            name="Default Project"
+        )
         session.add(project)
         session.commit()
         session.refresh(project)
 
     folder = session.exec(
-        select(Folder).where(Folder.project_id == project.id)
+        select(Folder).where(
+            (Folder.project_id == project.id) & (Folder.organization_id == auth.org_id)
+        )
     ).first()
     if not folder:
-        folder = Folder(project_id=project.id, name="Inbox")
+        folder = Folder(
+            project_id=project.id,
+            organization_id=auth.org_id,
+            name="Inbox"
+        )
         session.add(folder)
         session.commit()
         session.refresh(folder)
@@ -349,6 +522,7 @@ def workspace_from_briefing_item(
     # Create deliverable
     deliverable = Deliverable(
         folder_id=folder.id,
+        organization_id=auth.org_id,
         content_type=data.content_type,
         title=data.title,
         status="draft",
@@ -360,6 +534,8 @@ def workspace_from_briefing_item(
     # Create brief with the scrape item pre-loaded as intelligence context
     brief = Brief(
         project_id=project.id,
+        organization_id=auth.org_id,
+        user_id=auth.user_id,
         deliverable_id=deliverable.id,
         title=data.title,
         brief_md="",
@@ -385,7 +561,11 @@ class CalendarEventCreate(BaseModel):
 
 
 @router.post("/calendar/events")
-def create_calendar_event(data: CalendarEventCreate, session: Session = Depends(get_session)):
+def create_calendar_event(
+    data: CalendarEventCreate,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     """
     Create a calendar event linked to a deliverable.
     
@@ -393,6 +573,15 @@ def create_calendar_event(data: CalendarEventCreate, session: Session = Depends(
     Frontend receives event ID and sync status right away.
     """
     from services.calendar import create_event_atomic
+    
+    # Verify deliverable belongs to org
+    deliverable = session.exec(
+        select(Deliverable).where(
+            (Deliverable.id == data.deliverable_id) & (Deliverable.organization_id == auth.org_id)
+        )
+    ).first()
+    if not deliverable:
+        raise HTTPException(status_code=404, detail="Deliverable not found")
     
     try:
         event = create_event_atomic(
@@ -413,12 +602,27 @@ def create_calendar_event(data: CalendarEventCreate, session: Session = Depends(
 
 
 @router.get("/calendar/events/{deliverable_id}")
-def get_calendar_event(deliverable_id: int, session: Session = Depends(get_session)):
+def get_calendar_event(
+    deliverable_id: int,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     """Get calendar event for a deliverable."""
     from models import CalendarEvent
     
+    # Verify deliverable belongs to org
+    deliverable = session.exec(
+        select(Deliverable).where(
+            (Deliverable.id == deliverable_id) & (Deliverable.organization_id == auth.org_id)
+        )
+    ).first()
+    if not deliverable:
+        raise HTTPException(status_code=404, detail="Deliverable not found")
+    
     event = session.exec(
-        select(CalendarEvent).where(CalendarEvent.deliverable_id == deliverable_id)
+        select(CalendarEvent).where(
+            (CalendarEvent.deliverable_id == deliverable_id) & (CalendarEvent.organization_id == auth.org_id)
+        )
     ).first()
     
     if not event:
@@ -438,14 +642,32 @@ def get_calendar_event(deliverable_id: int, session: Session = Depends(get_sessi
 
 
 @router.put("/calendar/events/{event_id}")
-def update_calendar_event(event_id: int, data: CalendarEventCreate, session: Session = Depends(get_session)):
+def update_calendar_event(
+    event_id: int,
+    data: CalendarEventCreate,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     """Update a calendar event."""
     from models import CalendarEvent
     from services.calendar import sync_to_google
     
-    event = session.get(CalendarEvent, event_id)
+    event = session.exec(
+        select(CalendarEvent).where(
+            (CalendarEvent.id == event_id) & (CalendarEvent.organization_id == auth.org_id)
+        )
+    ).first()
     if not event:
         raise HTTPException(status_code=404, detail="Calendar event not found")
+    
+    # Verify deliverable still belongs to org
+    deliverable = session.exec(
+        select(Deliverable).where(
+            (Deliverable.id == data.deliverable_id) & (Deliverable.organization_id == auth.org_id)
+        )
+    ).first()
+    if not deliverable:
+        raise HTTPException(status_code=404, detail="Deliverable not found")
     
     event.title = data.title
     event.description = data.description
@@ -464,11 +686,19 @@ def update_calendar_event(event_id: int, data: CalendarEventCreate, session: Ses
 
 
 @router.delete("/calendar/events/{event_id}")
-def delete_calendar_event(event_id: int, session: Session = Depends(get_session)):
+def delete_calendar_event(
+    event_id: int,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     """Delete a calendar event (archives it, doesn't hard-delete)."""
     from models import CalendarEvent
     
-    event = session.get(CalendarEvent, event_id)
+    event = session.exec(
+        select(CalendarEvent).where(
+            (CalendarEvent.id == event_id) & (CalendarEvent.organization_id == auth.org_id)
+        )
+    ).first()
     if not event:
         raise HTTPException(status_code=404, detail="Calendar event not found")
     

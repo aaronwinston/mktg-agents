@@ -1,0 +1,120 @@
+name: API Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'apps/api/**'
+      - '.github/workflows/api-tests.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'apps/api/**'
+  schedule:
+    - cron: '0 2 * * *'  # Daily at 2 AM UTC
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: [ '3.9', '3.10', '3.11' ]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        cd apps/api
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run unit tests
+      run: |
+        cd apps/api
+        pytest tests/ -m unit -v --tb=short
+    
+    - name: Run integration tests
+      run: |
+        cd apps/api
+        pytest tests/ -m integration -v --tb=short
+    
+    - name: Run rate limiting tests
+      run: |
+        cd apps/api
+        pytest tests/ -m rate_limit -v --tb=short
+    
+    - name: Run all tests with coverage
+      run: |
+        cd apps/api
+        pytest tests/ -v --cov=. --cov-report=xml --cov-report=term-missing --tb=short
+    
+    - name: Check coverage threshold
+      run: |
+        cd apps/api
+        coverage report --fail-under=70
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./apps/api/coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        cd apps/api
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt flake8
+    
+    - name: Lint with flake8
+      run: |
+        cd apps/api
+        # Stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # Exit-zero treats all errors as warnings
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+    
+    - name: Install dependencies
+      run: |
+        cd apps/api
+        python -m pip install --upgrade pip
+        pip install bandit
+    
+    - name: Run security checks with bandit
+      run: |
+        cd apps/api
+        bandit -r . -ll --skip B101,B601
+      continue-on-error: true

@@ -31,7 +31,7 @@ export default function OnboardingPage() {
   const fetchState = async () => {
     try {
       const res = await fetch('/api/onboarding/state', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+        credentials: 'include'
       });
       if (res.ok) {
         const data = await res.json();
@@ -44,6 +44,7 @@ export default function OnboardingPage() {
           setCurrentStep('complete');
         }
       }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       setError('Failed to load onboarding state');
     } finally {
@@ -59,13 +60,15 @@ export default function OnboardingPage() {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          
         },
+        credentials: 'include',
         body: JSON.stringify({ completed_steps: newCompleted })
       });
       if (res.ok) {
         await fetchState();
       }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       setError('Failed to save progress');
     }
@@ -147,11 +150,13 @@ function CompanyPitchStep({ onNext }: { onNext: () => void }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          
         },
+        credentials: 'include',
         body: JSON.stringify({ pitch })
       });
       onNext();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       console.error(err);
     } finally {
@@ -193,11 +198,13 @@ function VoiceExamplesStep({ onNext }: { onNext: () => void }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          
         },
+        credentials: 'include',
         body: JSON.stringify({ examples: examples.filter(e => e.trim()) })
       });
       onNext();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       console.error(err);
     } finally {
@@ -249,13 +256,15 @@ function CompetitorsStep({ onNext }: { onNext: () => void }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          
         },
+        credentials: 'include',
         body: JSON.stringify({ 
           competitors: competitors.filter(c => c.name.trim()) 
         })
       });
       onNext();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       console.error(err);
     } finally {
@@ -342,20 +351,22 @@ function RuntimeKeyStep({ onNext }: { onNext: () => void }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          
         },
+        credentials: 'include',
         body: JSON.stringify({ api_key: apiKey })
       });
       if (res.ok) {
         // Validate the key
         const validateRes = await fetch('/api/runtimes/anthropic/validate', {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+          credentials: 'include'
         });
         if (validateRes.ok) {
           onNext();
         }
       }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       console.error(err);
     } finally {
@@ -404,11 +415,13 @@ function StarterProjectStep({ onNext }: { onNext: () => void }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          
         },
+        credentials: 'include',
         body: JSON.stringify({ template: selected })
       });
       onNext();
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (err) {
       console.error(err);
     } finally {
@@ -465,7 +478,7 @@ function CompleteStep() {
   return (
     <div className="bg-white rounded-lg shadow-lg p-8 text-center">
       <div className="text-4xl mb-4">🎉</div>
-      <h2 className="text-2xl font-bold mb-4">You're all set!</h2>
+      <h2 className="text-2xl font-bold mb-4">You&apos;re all set!</h2>
       <p className="text-gray-600">Redirecting to your dashboard...</p>
     </div>
   );

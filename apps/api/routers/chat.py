@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, Query
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select
 from database import get_session
@@ -8,8 +8,12 @@ from models import ChatSession, ChatMessage, ScrapeItem, Brief
 from services.generation import stream_chat, generate_brief, execute_playbook, CONTENT_TYPE_TO_PLAYBOOK
 from services.usage import UsageTracker
 from middleware.auth import get_current_user, AuthContext
+from middleware.rate_limit import limiter, global_rate_limit_key
+from config import settings
 from pydantic import BaseModel
 from typing import Optional
+from monitoring import time_operation, trace_operation
+from services.query_optimization import PaginationParams, add_pagination
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -58,39 +62,57 @@ class BriefUpdateRequest(BaseModel):
     toggles: Optional[dict] = None
 
 @router.post("/session")
+@trace_operation("create_chat_session")
 def create_session(
     project_id: Optional[int] = None,
     auth: AuthContext = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    s = ChatSession(project_id=project_id, organization_id=auth.org_id)
-    session.add(s)
-    session.commit()
-    session.refresh(s)
-    return s
+    with time_operation("db_query", attributes={"table": "chat_session", "operation": "insert"}):
+        s = ChatSession(project_id=project_id, organization_id=auth.org_id)
+        session.add(s)
+        session.commit()
+        session.refresh(s)
+        return s
 
 @router.get("/session/{session_id}/messages")
+@trace_operation("get_chat_messages")
 def get_messages(
     session_id: int,
     auth: AuthContext = Depends(get_current_user),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
 ):
-    msgs = session.exec(
-        select(ChatMessage).where(
+    """Get chat messages for a session with pagination."""
+    with time_operation("db_query", attributes={"table": "chat_message", "operation": "list"}):
+        pagination = PaginationParams(skip=skip, limit=limit)
+        query = select(ChatMessage).where(
             (ChatMessage.session_id == session_id) &
             (ChatMessage.organization_id == auth.org_id)
-        )
-    ).all()
-    return msgs
+        ).order_by(ChatMessage.created_at.desc())
+        query = add_pagination(query, pagination)
+        return session.exec(query).all()
 
 @router.post("/stream")
+@limiter.limit(
+    settings.RATE_LIMIT_EXPENSIVE_GLOBAL,
+    key_func=global_rate_limit_key,
+    override_defaults=False,
+)
 async def chat_stream(
+    request: Request,
+    response: Response,
     req: ChatRequest,
     auth: AuthContext = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     if req.session_id:
-        chat_session = session.get(ChatSession, req.session_id)
+        chat_session = session.exec(
+            select(ChatSession).where(
+                (ChatSession.id == req.session_id) & (ChatSession.organization_id == auth.org_id)
+            )
+        ).first()
         if not chat_session:
             raise HTTPException(status_code=404, detail="Session not found")
     else:
@@ -100,18 +122,29 @@ async def chat_stream(
         session.refresh(chat_session)
 
     history = session.exec(
-        select(ChatMessage).where(ChatMessage.session_id == chat_session.id)
+        select(ChatMessage).where(
+            (ChatMessage.session_id == chat_session.id) & (ChatMessage.organization_id == auth.org_id)
+        )
     ).all()
     messages = [{"role": m.role, "content": m.content} for m in history]
     messages.append({"role": "user", "content": req.message})
 
-    user_msg = ChatMessage(session_id=chat_session.id, role="user", content=req.message)
+    user_msg = ChatMessage(
+        session_id=chat_session.id,
+        organization_id=auth.org_id,
+        role="user",
+        content=req.message
+    )
     session.add(user_msg)
     session.commit()
 
     scrape_items = []
     for item_id in req.scrape_item_ids:
-        item = session.get(ScrapeItem, item_id)
+        item = session.exec(
+            select(ScrapeItem).where(
+                (ScrapeItem.id == item_id) & (ScrapeItem.organization_id == auth.org_id)
+            )
+        ).first()
         if item:
             scrape_items.append({"title": item.title, "body": item.body, "source_url": item.source_url})
 
@@ -135,6 +168,7 @@ async def chat_stream(
             with Session(session_bind) as save_session:
                 ai_msg = ChatMessage(
                     session_id=chat_session_id,
+                    organization_id=org_id,
                     role="assistant",
                     content=full_response
                 )
@@ -159,7 +193,14 @@ async def chat_stream(
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 @router.post("/brief")
+@limiter.limit(
+    settings.RATE_LIMIT_EXPENSIVE_GLOBAL,
+    key_func=global_rate_limit_key,
+    override_defaults=False,
+)
 async def generate_brief_endpoint(
+    request: Request,
+    response: Response,
     req: BriefRequest,
     auth: AuthContext = Depends(get_current_user),
     session: Session = Depends(get_session)
@@ -193,7 +234,14 @@ async def generate_brief_endpoint(
     return {"brief_id": b.id, "brief_md": brief_md}
 
 @router.post("/generate")
+@limiter.limit(
+    settings.RATE_LIMIT_EXPENSIVE_GLOBAL,
+    key_func=global_rate_limit_key,
+    override_defaults=False,
+)
 async def generate_deliverable(
+    request: Request,
+    response: Response,
     req: GenerateRequest,
     auth: AuthContext = Depends(get_current_user),
 ):
@@ -481,7 +529,11 @@ Do NOT output anything else after the JSON. The JSON is your final response."""
 
 
 @router.post("/brief-yolo")
-async def brief_yolo(req: BriefYoloRequest, session: Session = Depends(get_session)):
+async def brief_yolo(
+    req: BriefYoloRequest,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     """YOLO mode: atomic one-shot brief + deliverable creation.
     
     Creates Brief and Deliverable in a single transaction.
@@ -499,20 +551,32 @@ async def brief_yolo(req: BriefYoloRequest, session: Session = Depends(get_sessi
         
         # Get or create default project
         project = session.exec(
-            select(Project).where(Project.user_id == "aaron")
+            select(Project).where(
+                (Project.user_id == auth.user_id) & (Project.organization_id == auth.org_id)
+            )
         ).first()
         if not project:
-            project = Project(user_id="aaron", name="Default Project")
+            project = Project(
+                user_id=auth.user_id,
+                organization_id=auth.org_id,
+                name="Default Project"
+            )
             session.add(project)
             session.commit()
             session.refresh(project)
         
         # Get or create default folder
         folder = session.exec(
-            select(Folder).where(Folder.project_id == project.id)
+            select(Folder).where(
+                (Folder.project_id == project.id) & (Folder.organization_id == auth.org_id)
+            )
         ).first()
         if not folder:
-            folder = Folder(project_id=project.id, name="Deliverables")
+            folder = Folder(
+                project_id=project.id,
+                organization_id=auth.org_id,
+                name="Deliverables"
+            )
             session.add(folder)
             session.commit()
             session.refresh(folder)
@@ -520,6 +584,8 @@ async def brief_yolo(req: BriefYoloRequest, session: Session = Depends(get_sessi
         # Create Brief (atomic transaction)
         brief = Brief(
             project_id=project.id,
+            organization_id=auth.org_id,
+            user_id=auth.user_id,
             title=content_type.replace("_", " ").title(),
             brief_md=brief_md,
             toggles_json=json.dumps(req.toggles),
@@ -530,6 +596,7 @@ async def brief_yolo(req: BriefYoloRequest, session: Session = Depends(get_sessi
         # Create Deliverable in same transaction
         deliverable = Deliverable(
             folder_id=folder.id,
+            organization_id=auth.org_id,
             content_type=content_type,
             title=content_type.replace("_", " ").title(),
             status="draft",

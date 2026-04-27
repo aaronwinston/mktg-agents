@@ -1,4 +1,24 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { validateConfig } from './config';
+
+// Validate configuration on module load
+if (typeof window !== 'undefined') {
+  try {
+    validateConfig();
+  } catch (error) {
+    console.error('Configuration validation failed:', error);
+    // In development, we'll log but not crash - fallback to localhost:8000
+    // In production, this should fail hard
+    if (process.env.NODE_ENV === 'production') {
+      throw error;
+    }
+  }
+}
+
+const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
+
+export function getApiBase(): string {
+  return API_BASE;
+}
 
 export interface Session {
   id: number;
@@ -62,17 +82,13 @@ export interface ApiError {
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T | ApiError> {
   try {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...options?.headers as Record<string, string>,
     };
     
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    
     const res = await fetch(`${API_BASE}${path}`, {
+      credentials: 'include', // Always send cookies for auth
       headers,
       ...options,
     });

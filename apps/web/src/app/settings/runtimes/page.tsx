@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { getApiBase } from '@/lib/api';
 
 interface RuntimeKey {
   runtime: string;
@@ -23,8 +24,8 @@ export default function RuntimesSettings() {
 
   const fetchKeys = async () => {
     try {
-      const res = await fetch('/api/runtimes', {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+      const res = await fetch(`${getApiBase()}/api/runtimes`, {
+        credentials: 'include'
       });
       if (res.ok) {
         setKeys(await res.json());
@@ -41,12 +42,12 @@ export default function RuntimesSettings() {
     setSuccess('');
 
     try {
-      const res = await fetch(`/api/runtimes/${selectedRuntime}/add`, {
+      const res = await fetch(`${getApiBase()}/api/runtimes/${selectedRuntime}/add`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
         },
+        credentials: 'include',
         body: JSON.stringify({ api_key: apiKey })
       });
 
@@ -67,9 +68,9 @@ export default function RuntimesSettings() {
 
   const handleValidate = async (runtime: string) => {
     try {
-      const res = await fetch(`/api/runtimes/${runtime}/validate`, {
+      const res = await fetch(`${getApiBase()}/api/runtimes/${runtime}/validate`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+        credentials: 'include'
       });
       const data = await res.json();
       
@@ -88,9 +89,9 @@ export default function RuntimesSettings() {
     if (!confirm(`Delete ${runtime} key?`)) return;
 
     try {
-      const res = await fetch(`/api/runtimes/${runtime}`, {
+      const res = await fetch(`${getApiBase()}/api/runtimes/${runtime}`, {
         method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+        credentials: 'include'
       });
 
       if (res.ok) {
