@@ -242,21 +242,36 @@ def run_migrations(database_url: Optional[str] = None) -> None:
             "CREATE TABLE IF NOT EXISTS schema_migrations (version TEXT PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT (datetime('now')))"
         )
 
+        # Migration 0001: Initial constraints
         version = "0001_initial_constraints"
         already = conn.execute(
             "SELECT 1 FROM schema_migrations WHERE version=?", (version,)
         ).fetchone()
-        if already:
-            return
+        if not already:
+            sql_path = migrations_dir / f"{version}.sql"
+            if not sql_path.exists():
+                raise FileNotFoundError(f"Missing migration file: {sql_path}")
 
-        sql_path = migrations_dir / f"{version}.sql"
-        if not sql_path.exists():
-            raise FileNotFoundError(f"Missing migration file: {sql_path}")
+            conn.execute("BEGIN")
+            _apply_migration_0001(conn, sql_path)
+            conn.execute("INSERT INTO schema_migrations(version) VALUES (?)", (version,))
+            conn.execute("COMMIT")
 
-        conn.execute("BEGIN")
-        _apply_migration_0001(conn, sql_path)
-        conn.execute("INSERT INTO schema_migrations(version) VALUES (?)", (version,))
-        conn.execute("COMMIT")
+        # Migration 0002: Performance indexes
+        version = "0002_performance_indexes"
+        already = conn.execute(
+            "SELECT 1 FROM schema_migrations WHERE version=?", (version,)
+        ).fetchone()
+        if not already:
+            sql_path = migrations_dir / f"{version}.sql"
+            if not sql_path.exists():
+                raise FileNotFoundError(f"Missing migration file: {sql_path}")
+
+            conn.execute("BEGIN")
+            sql_text = sql_path.read_text(encoding="utf-8")
+            conn.executescript(sql_text)
+            conn.execute("INSERT INTO schema_migrations(version) VALUES (?)", (version,))
+            conn.execute("COMMIT")
     except Exception:
         conn.execute("ROLLBACK")
         raise
