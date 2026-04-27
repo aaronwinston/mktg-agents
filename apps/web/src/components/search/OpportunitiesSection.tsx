@@ -63,7 +63,7 @@ export default function OpportunitiesSection() {
     <div className="space-y-4">
       <div>
         <h2 className="text-xl font-semibold">Opportunity gaps</h2>
-        <p className="text-sm text-fg-secondary mt-1">Topics with rising interest we don't rank for yet</p>
+        <p className="text-sm text-fg-secondary mt-1">Topics with rising interest we don&apos;t rank for yet</p>
       </div>
 
       {error && (

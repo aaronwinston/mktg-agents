@@ -29,6 +29,8 @@ interface Deliverable {
   content_type: string;
   title: string;
   status: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface LetsBuildModalProps {
@@ -448,6 +450,8 @@ export default function LetsBuildModal({ isOpen, onClose, onSuccess }: LetsBuild
         content_type: data.deliverable.content_type,
         title: data.deliverable.title,
         status: data.deliverable.status,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       });
       
       setLoading(false);

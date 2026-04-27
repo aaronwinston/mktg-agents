@@ -86,7 +86,7 @@ export default function StartSocialItemModal({ isOpen, onClose, item }: StartSoc
 
       if (!response.ok) throw new Error('Failed to create deliverable');
 
-      const deliverable = await response.json();
+      await response.json();
       alert(`Created deliverable "${title}" with social context`);
       onClose();
     } catch (err) {

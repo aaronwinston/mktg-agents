@@ -85,7 +85,7 @@ export default function StartInsightModal({ isOpen, onClose, insight }: StartIns
 
       if (!response.ok) throw new Error('Failed to create deliverable');
 
-      const deliverable = await response.json();
+      await response.json();
       alert(`Created deliverable "${title}" with insight context`);
       onClose();
     } catch (err) {

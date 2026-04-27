@@ -10,13 +10,23 @@ import { Button } from '@/components/ui/Button';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+interface DeliverableResult {
+  id?: number;
+  folder_id?: number;
+  content_type?: string;
+  title?: string;
+  status?: string;
+}
+
 export default function DashboardPage() {
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [showLetsBuildModal, setShowLetsBuildModal] = useState(false);
   const router = useRouter();
 
-  const handleLetsBuildSuccess = (deliverable: { id: number }) => {
-    router.push(`/workspace/${deliverable.id}`);
+  const handleLetsBuildSuccess = (deliverable: DeliverableResult) => {
+    if (deliverable.id) {
+      router.push(`/workspace/${deliverable.id}`);
+    }
   };
 
   return (

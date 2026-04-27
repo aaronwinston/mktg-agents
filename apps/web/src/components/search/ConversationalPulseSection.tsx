@@ -32,7 +32,7 @@ export default function ConversationalPulseSection() {
   };
 
   const handleItemClick = (item: ScrapeItem) => {
-    setSelectedItem(item as any);
+    setSelectedItem(item);
     setShowModal(true);
   };
 
@@ -71,7 +71,7 @@ export default function ConversationalPulseSection() {
       ) : items.length === 0 ? (
         <div className="border rounded-card p-8 text-center">
           <p className="text-sm text-gray-700">No social items yet.</p>
-          <p className="text-xs text-gray-500 mt-1">Click "Refresh now" to fetch conversations from Hacker News, Reddit, and GitHub.</p>
+          <p className="text-xs text-gray-500 mt-1">Click &quot;Refresh now&quot; to fetch conversations from Hacker News, Reddit, and GitHub.</p>
         </div>
       ) : (
         <div className="space-y-3">
