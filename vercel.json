@@ -1,33 +1,11 @@
 {
-  "builds": [
-    {
-      "src": "apps/web/package.json",
-      "use": "@vercel/next"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/:path*",
-      "dest": "http://localhost:8000/api/:path*"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "apps/web/.next:path*"
-    }
-  ],
+  "buildCommand": "cd apps/web && npm install && npm run build",
+  "outputDirectory": "apps/web/.next",
+  "framework": "nextjs",
   "regions": ["sfo1"],
   "headers": [
     {
-      "source": "/api/:path*",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/:path*",
+      "source": "/(.*)",
       "headers": [
         {
           "key": "Content-Security-Policy",
