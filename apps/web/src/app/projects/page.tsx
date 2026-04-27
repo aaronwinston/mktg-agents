@@ -32,6 +32,12 @@ export default function ProjectsPage() {
   return (
     <div className="p-6 max-w-6xl mx-auto">
       <h1 className="text-2xl font-semibold text-fg-primary mb-6">Projects</h1>
+      {error && (
+        <div className="mb-6 border border-red-300 rounded-lg p-4 bg-red-50">
+          <p className="text-sm text-red-800 mb-2">{error}</p>
+          <Button size="sm" onClick={load} variant="secondary">Retry</Button>
+        </div>
+      )}
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}

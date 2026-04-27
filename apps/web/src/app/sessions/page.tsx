@@ -41,6 +41,13 @@ export default function SessionsPage() {
         </div>
         <Button onClick={() => setShowModal(true)}>+ New Session</Button>
       </div>
+
+      {error && (
+        <div className="mb-6 border border-red-300 rounded-lg p-4 bg-red-50">
+          <p className="text-sm text-red-800 mb-2">{error}</p>
+          <Button size="sm" onClick={load} variant="secondary">Retry</Button>
+        </div>
+      )}
       
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
