@@ -385,12 +385,18 @@ export default function ProjectTree() {
   const renderDeliverable = (deliverable: Deliverable) => {
     const statusColor = getStatusColor(deliverable.status);
     const badgeColor = getContentTypeBadgeColor(deliverable.content_type);
+    const isSelected = selectedItem?.type === 'deliverable' && selectedItem?.id === deliverable.id;
 
     return (
       <div
         key={`del-${deliverable.id}`}
-        className="ml-12 py-1 px-2 text-sm hover:bg-accent/50 rounded cursor-pointer flex items-center justify-between group"
-        onClick={() => handleDeliverableClick(deliverable)}
+        className={`ml-12 py-1 px-2 text-sm rounded cursor-pointer flex items-center justify-between group ${
+          isSelected ? 'bg-primary/20 border-l-2 border-primary' : 'hover:bg-accent/50'
+        }`}
+        onClick={() => {
+          handleDeliverableClick(deliverable);
+          setSelectedItem({ type: 'deliverable', id: deliverable.id, parentId: deliverable.folder_id });
+        }}
         onContextMenu={(e) => handleContextMenu(e, 'deliverable', deliverable.id, deliverable.folder_id)}
       >
         <span className="flex items-center gap-2 flex-1">
