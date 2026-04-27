@@ -9,7 +9,7 @@ from sqlmodel import Session, select
 from database import get_session
 from middleware.auth import get_current_user, AuthContext
 from personal_mode import is_personal
-from models import Project, BriefingItem
+from models import Project
 import httpx
 
 router = APIRouter()
