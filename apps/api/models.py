@@ -201,6 +201,20 @@ class ScrapeItem(SQLModel, table=True):
     dismissed_at: Optional[datetime] = None
 
 
+class BriefingFeedback(SQLModel, table=True):
+    __table_args__ = (
+        CheckConstraint("feedback_type IN ('thumbs_up','thumbs_down')", name="ck_briefingfeedback_type"),
+        Index("idx_briefingfeedback_item", "briefing_item_id"),
+        Index("idx_briefingfeedback_user_created", "user_id", "created_at"),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    briefing_item_id: int = Field(foreign_key="scrapeitem.id")
+    user_id: str  # No FK; users are external (Clerk)
+    feedback_type: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class PipelineRun(SQLModel, table=True):
     __table_args__ = (
         CheckConstraint(

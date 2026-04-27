@@ -1,9 +1,12 @@
 'use client';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { api } from '@/lib/api';
 import type { Story } from '@/lib/api';
 
 export function StoryCard({ story }: { story: Story }) {
   const router = useRouter();
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   function handleClick(e: React.MouseEvent) {
     // Ctrl/Cmd+click → open source URL in new tab
@@ -13,6 +16,15 @@ export function StoryCard({ story }: { story: Story }) {
     }
     // Primary click → open workspace with story as context
     router.push(`/workspace/new?context_item=${story.id}&source_url=${encodeURIComponent(story.url)}&title=${encodeURIComponent(story.title)}`);
+  }
+
+  async function handleFeedback(type: 'thumbs_up' | 'thumbs_down') {
+    try {
+      await api.submitBriefingFeedback(parseInt(story.id), type);
+      setFeedback(type);
+    } catch (err) {
+      console.error('[StoryCard] Feedback error:', err);
+    }
   }
 
   return (
@@ -49,7 +61,32 @@ export function StoryCard({ story }: { story: Story }) {
           <span className="font-medium text-fg-secondary">Content angle: </span>
           {story.content_angle}
         </p>
-        <span className="text-xs text-fg-tertiary shrink-0">Open in workspace →</span>
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleFeedback('thumbs_up');
+            }}
+            className={`text-lg transition-colors ${
+              feedback === 'thumbs_up' ? 'text-green-500' : 'text-fg-tertiary hover:text-fg-secondary'
+            }`}
+            title="Helpful"
+          >
+            👍
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleFeedback('thumbs_down');
+            }}
+            className={`text-lg transition-colors ${
+              feedback === 'thumbs_down' ? 'text-red-500' : 'text-fg-tertiary hover:text-fg-secondary'
+            }`}
+            title="Not helpful"
+          >
+            👎
+          </button>
+        </div>
       </div>
     </div>
   );

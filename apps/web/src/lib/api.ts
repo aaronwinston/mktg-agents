@@ -172,6 +172,13 @@ export async function refreshBriefing(): Promise<BriefingResponse> {
   return result;
 }
 
+export async function submitBriefingFeedback(itemId: number, feedbackType: 'thumbs_up' | 'thumbs_down'): Promise<{ ok: boolean } | ApiError> {
+  return apiFetch<{ ok: boolean }>(`/api/briefing/${itemId}/feedback`, { 
+    method: 'POST', 
+    body: JSON.stringify({ feedback_type: feedbackType }) 
+  });
+}
+
 export async function getProjects(): Promise<Project[]> {
   const result = await apiFetch<Project[]>('/api/projects');
   if (isApiError(result)) return [];
@@ -269,6 +276,8 @@ export const api = {
   dismissItem: (id: number) => apiFetch<unknown>(`/api/intelligence/items/${id}/dismiss`, { method: 'POST' }),
   useAsContext: (id: number) => apiFetch<unknown>(`/api/intelligence/items/${id}/use-as-context`, { method: 'POST' }),
   triggerScrape: () => apiFetch<unknown>('/api/intelligence/scrape', { method: 'POST' }),
+  submitBriefingFeedback: (itemId: number, feedbackType: 'thumbs_up' | 'thumbs_down') => 
+    submitBriefingFeedback(itemId, feedbackType),
   getFileTree: () => apiFetch<unknown>('/api/files/tree'),
   getSkills: () => apiFetch<unknown[]>('/api/files/skills'),
   getPlaybooks: () => apiFetch<unknown[]>('/api/files/playbooks'),
