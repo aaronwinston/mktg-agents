@@ -8,11 +8,13 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [folders, setFolders] = useState<any[]>([]);
   const [foldersLoading, setFoldersLoading] = useState(true);
+  const [foldersError, setFoldersError] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedFolder, setSelectedFolder] = useState<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [deliverables, setDeliverables] = useState<any[]>([]);
   const [deliverablesLoading, setDeliverablesLoading] = useState(false);
+  const [deliverablesError, setDeliverablesError] = useState<string | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedDeliverable, setSelectedDeliverable] = useState<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
