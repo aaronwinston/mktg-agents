@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { getBriefing, getBriefingByDate, refreshBriefing, checkHealth } from '@/lib/api';
+import { getBriefing, getBriefingByDate, checkHealth, api } from '@/lib/api';
 import type { Story } from '@/lib/api';
 import { StoryCard } from './StoryCard';
 import { SkeletonCard } from '@/components/ui/SkeletonCard';
@@ -75,9 +75,19 @@ export function BriefingBook() {
     try {
       setRefreshing(true);
       setRefreshProgress(true);
-      const result = await refreshBriefing();
+      
+      // Trigger scrape per PRD 4.3
+      await api.triggerScrape();
+      
+      // Wait a moment for scrape to complete, then reload briefing
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const result = await getBriefing();
       setRefreshProgress(false);
-      if ((result.stories ?? []).length > 0 || !result.error) {
+      
+      if (result.error) {
+        setOffline(true);
+        setOfflineMessage('Scrape completed but failed to load briefing.');
+      } else {
         setOffline(false);
         setStories((result.stories ?? []).slice(0, MAX_ITEMS));
         setRefreshedAt(result.refreshed_at);

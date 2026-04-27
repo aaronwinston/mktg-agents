@@ -169,6 +169,50 @@ Read `core/VOICE.md`. All contributions should match the voice and style defined
 
 ---
 
+## v1 Release Status
+
+ForgeOS v1 (phases 1–4 of FORGEOS_PRD.md) is production-ready. Key components:
+
+### 4.1 Showstopper fixes ✅
+- API health endpoint (`GET /api/health`)
+- Model configuration (Claude Opus for generation, Haiku for scoring)
+- Error handling: frontend distinguishes API unreachable, HTTP errors, and empty data states
+
+### 4.2–4.4 Unified execution pipeline ✅
+- Single agent chain execution path via `execute_playbook()`
+- Pipeline step persistence: each agent's input/output logged to DB
+- Final output persisted to Deliverable on pipeline completion
+
+### 4.3 Intelligence unification ✅
+- Briefing Book: curated ScrapeItem view (score ≥7, last 24h, with why_relevant + content_angle)
+- Intelligence page: full scored feed with filters
+- Refresh button triggers `/api/intelligence/scrape` and reloads briefing
+
+### 4.4 PipelineRun refactor ✅
+- Model properly links Brief → PipelineRun → Deliverable
+- Output lives on Deliverable.body_md, not PipelineRun.output
+- Sessions UI displays run state + progress
+
+### 4.5 Workspace surface ✅
+- Three-pane layout: project tree (left), chat/editor/brief tabs (center), toggles + context (right)
+- Full CRUD for projects/folders/deliverables
+- TipTap markdown editor with round-trip fidelity
+- Streaming chat with Claude integration
+
+### 4.6 Settings/Engine editor ✅
+- Tree view for core/, context/, skills/, playbooks/, rubrics/
+- WYSIWYG markdown editor with frontmatter support
+- References indicator shows skills/playbooks using each file
+- Unsaved changes warning (browser + UI level)
+- Explicit save with error handling
+
+### 4.7–4.8 Frontend polish ✅
+- React Query for data fetching (chosen; SWR not present)
+- All async surfaces have loading/empty/error states
+- Documentation updated
+
+---
+
 ## License
 
 MIT. Use it, fork it, build on it.
