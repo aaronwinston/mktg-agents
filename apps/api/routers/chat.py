@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, Query
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select
 from database import get_session
@@ -12,6 +12,8 @@ from middleware.rate_limit import limiter, global_rate_limit_key
 from config import settings
 from pydantic import BaseModel
 from typing import Optional
+from monitoring import time_operation, trace_operation
+from services.query_optimization import PaginationParams, add_pagination
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -60,30 +62,37 @@ class BriefUpdateRequest(BaseModel):
     toggles: Optional[dict] = None
 
 @router.post("/session")
+@trace_operation("create_chat_session")
 def create_session(
     project_id: Optional[int] = None,
     auth: AuthContext = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    s = ChatSession(project_id=project_id, organization_id=auth.org_id)
-    session.add(s)
-    session.commit()
-    session.refresh(s)
-    return s
+    with time_operation("db_query", attributes={"table": "chat_session", "operation": "insert"}):
+        s = ChatSession(project_id=project_id, organization_id=auth.org_id)
+        session.add(s)
+        session.commit()
+        session.refresh(s)
+        return s
 
 @router.get("/session/{session_id}/messages")
+@trace_operation("get_chat_messages")
 def get_messages(
     session_id: int,
     auth: AuthContext = Depends(get_current_user),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
 ):
-    msgs = session.exec(
-        select(ChatMessage).where(
+    """Get chat messages for a session with pagination."""
+    with time_operation("db_query", attributes={"table": "chat_message", "operation": "list"}):
+        pagination = PaginationParams(skip=skip, limit=limit)
+        query = select(ChatMessage).where(
             (ChatMessage.session_id == session_id) &
             (ChatMessage.organization_id == auth.org_id)
-        )
-    ).all()
-    return msgs
+        ).order_by(ChatMessage.created_at.desc())
+        query = add_pagination(query, pagination)
+        return session.exec(query).all()
 
 @router.post("/stream")
 @limiter.limit(

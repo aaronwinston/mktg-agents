@@ -70,6 +70,17 @@ class Settings(BaseSettings):
     # Celery/Redis configuration
     CELERY_BROKER_URL: str = "redis://localhost:6379/0"
     CELERY_RESULT_BACKEND: str = "redis://localhost:6379/0"
+    
+    # Observability & Monitoring (P4.2)
+    SENTRY_DSN: str = ""
+    SENTRY_ENVIRONMENT: str = "development"
+    SENTRY_TRACES_SAMPLE_RATE: float = 0.1  # 10% performance sampling
+    SENTRY_PROFILE_SAMPLE_RATE: float = 0.1
+    
+    # Redis for caching (P4.1 optional)
+    REDIS_URL: str = "redis://localhost:6379/1"
+    CACHE_ENABLED: bool = True
+    CACHE_TTL_SECONDS: int = 3600
 
     class Config:
         env_file = ".env"

@@ -6,6 +6,47 @@ from logging_config import configure_logging
 
 configure_logging()
 
+# Setup Sentry error tracking (P4.2) before importing routers
+def setup_sentry():
+    """Initialize Sentry error tracking and performance monitoring."""
+    from config import settings
+    
+    if not settings.SENTRY_DSN:
+        return None
+    
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+        from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+        from sentry_sdk.integrations.celery import CeleryIntegration
+        
+        sentry_sdk.init(
+            dsn=settings.SENTRY_DSN,
+            integrations=[
+                FastApiIntegration(),
+                SqlalchemyIntegration(),
+                CeleryIntegration(),
+            ],
+            environment=settings.SENTRY_ENVIRONMENT,
+            traces_sample_rate=settings.SENTRY_TRACES_SAMPLE_RATE,
+            profiles_sample_rate=settings.SENTRY_PROFILE_SAMPLE_RATE,
+            attach_stacktrace=True,
+        )
+        
+        import logging
+        logging.getLogger(__name__).info(
+            f"Sentry initialized — environment: {settings.SENTRY_ENVIRONMENT}, "
+            f"traces sampling: {settings.SENTRY_TRACES_SAMPLE_RATE * 100:.0f}%"
+        )
+        return sentry_sdk
+    
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Sentry setup failed (non-fatal): {e}")
+        return None
+
+setup_sentry()
+
 # Register audit listeners (SQLAlchemy session hooks)
 import audit as audit_trail  # noqa: F401
 
@@ -174,4 +215,47 @@ async def shutdown():
 @app.get("/api/health")
 @limiter.limit(settings.RATE_LIMIT_PUBLIC)
 def health(request: Request, response: Response):
-    return {"status": "ok", "version": "1.0.0"}
+    """
+    Health check endpoint with database and service connectivity checks.
+    Provides observability into system state for monitoring/alerting.
+    """
+    from database import get_session
+    
+    health_status = {
+        "status": "ok",
+        "version": "1.0.0",
+        "checks": {
+            "database": "unknown",
+            "redis": "unknown",
+        }
+    }
+    
+    # Check database connectivity
+    try:
+        session = next(get_session())
+        from sqlmodel import select
+        from models import Organization
+        session.exec(select(Organization).limit(1)).first()
+        session.close()
+        health_status["checks"]["database"] = "ok"
+    except Exception as e:
+        health_status["checks"]["database"] = f"error: {str(e)}"
+        health_status["status"] = "degraded"
+    
+    # Check Redis connectivity (for caching and Celery)
+    try:
+        import redis
+        client = redis.from_url(settings.REDIS_URL, socket_connect_timeout=2)
+        client.ping()
+        health_status["checks"]["redis"] = "ok"
+    except Exception as e:
+        health_status["checks"]["redis"] = f"warning: {str(e)}"
+        # Don't mark as degraded if Redis is down (it's optional for caching)
+    
+    # Check Celery (scheduler)
+    if scheduler and scheduler.running:
+        health_status["checks"]["scheduler"] = "ok"
+    else:
+        health_status["checks"]["scheduler"] = "warning: not running"
+    
+    return health_status

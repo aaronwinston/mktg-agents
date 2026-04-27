@@ -264,3 +264,246 @@ See [BACKGROUND_JOBS.md](./BACKGROUND_JOBS.md) for the complete list and details
 ---
 
 For more context, see the [main README](../../README.md).
+
+---
+
+## Query Optimization (P4.1)
+
+ForgeOS API implements SQLAlchemy query optimization patterns to prevent N+1 queries and improve performance.
+
+### Patterns
+
+#### 1. Pagination with Offset/Limit
+
+Always paginate list endpoints to reduce memory usage and response time:
+
+```python
+from fastapi import Query
+from services.query_optimization import PaginationParams, add_pagination
+
+@router.get("/projects")
+def list_projects(
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
+):
+    pagination = PaginationParams(skip=skip, limit=limit)
+    query = select(Project).where(Project.organization_id == auth.org_id)
+    query = add_pagination(query, pagination)
+    return session.exec(query).all()
+```
+
+#### 2. Eager Loading with selectinload
+
+Load related objects in the same query to avoid N+1 queries:
+
+```python
+from services.query_optimization import apply_eager_loading
+
+# Bad: N+1 queries (one for briefs, one per brief for items)
+briefs = session.exec(select(Brief)).all()
+for brief in briefs:
+    items = brief.items  # Lazy load - triggers N queries
+
+# Good: Single query with eager loading
+query = select(Brief).options(
+    selectinload(Brief.scrape_items)
+)
+briefs = session.exec(query).all()
+
+# Or use the helper:
+query = select(Brief)
+query = apply_eager_loading(query, Brief, ["scrape_items"])
+```
+
+#### 3. Optimized List Queries
+
+Use `optimize_list_query()` for the recommended pattern:
+
+```python
+from services.query_optimization import optimize_list_query
+
+# Single optimized call with pagination, ordering, and eager loading
+projects = optimize_list_query(
+    session,
+    Project,
+    org_id=auth.org_id,
+    skip=skip,
+    limit=limit,
+    relationships=["folders", "briefs"],
+    order_by_field=Project.created_at.desc(),
+)
+```
+
+#### 4. Caching
+
+Optional Redis caching for read-heavy endpoints:
+
+```python
+from services.query_optimization import cached_query
+from config import settings
+
+@cached_query(cache_ttl_seconds=3600, cache_enabled=settings.CACHE_ENABLED)
+def get_user_projects(user_id: str, session: Session):
+    return session.exec(
+        select(Project).where(Project.user_id == user_id)
+    ).all()
+```
+
+### Performance Benchmarks
+
+Expected improvements with optimization:
+
+| Query Type | Before | After | Improvement |
+|-----------|--------|-------|------------|
+| List 100 projects | 101 queries, 500ms | 1 query, 50ms | 10x faster |
+| List items with relationships | 51 queries, 800ms | 2 queries, 80ms | 10x faster |
+| Paginated list (20 items) | 1 query | 1 query | No change (already fast) |
+
+### Monitoring Queries
+
+Use the monitoring tools to track query performance:
+
+```python
+from monitoring import time_operation, record_db_operation
+
+with time_operation("list_projects", attributes={"table": "project"}):
+    projects = session.exec(select(Project)).all()
+    record_db_operation("select", "project", count=len(projects))
+```
+
+---
+
+## Observability & Monitoring (P4.2)
+
+ForgeOS API provides comprehensive observability via Sentry error tracking and OpenTelemetry distributed tracing.
+
+### Sentry Integration
+
+Sentry captures errors and provides performance monitoring.
+
+#### Configuration
+
+Add to `.env`:
+
+```env
+SENTRY_DSN=https://your-key@sentry.io/your-project-id
+SENTRY_ENVIRONMENT=production
+SENTRY_TRACES_SAMPLE_RATE=0.1
+SENTRY_PROFILE_SAMPLE_RATE=0.1
+```
+
+- `SENTRY_DSN` — Get from sentry.io; leave blank to disable
+- `SENTRY_TRACES_SAMPLE_RATE` — 10% of requests sampled for performance tracing
+- `SENTRY_PROFILE_SAMPLE_RATE` — 10% of traced requests include profiling data
+
+#### What's Tracked
+
+- **Errors**: All unhandled exceptions automatically captured
+- **Performance**: Request latency, database queries, Celery tasks
+- **Context**: User ID, organization ID, request ID attached to all traces
+- **Slow Requests**: Alerts on endpoints >1000ms
+- **Database Issues**: Slow queries (>500ms) and connection pool saturation
+
+### Distributed Tracing
+
+Trace requests through the entire system:
+
+```python
+from monitoring import trace_operation, time_operation
+
+@router.get("/projects")
+@trace_operation("list_projects")  # Creates named trace span
+def list_projects(auth, session):
+    with time_operation("db_query", attributes={"table": "projects"}):
+        return session.exec(select(Project)).all()
+```
+
+### Metrics Collection
+
+Real-time metrics on request/database performance:
+
+```python
+from monitoring import get_metrics_collector, get_request_summary
+
+# After request completes, retrieve summary
+summary = get_request_summary()
+print(f"Request took {summary['total_duration_ms']}ms")
+print(f"Database queries: {summary['db_query_count']}")
+```
+
+Metrics exported:
+
+- `http_requests_total` — Total requests by endpoint/method/status
+- `http_request_duration_ms` — Request latency (histogram)
+- `db_queries_total` — Total database queries by operation/table
+- `db_query_duration_ms` — Query latency (histogram)
+- `celery_tasks_total` — Total background jobs executed
+- `celery_task_duration_ms` — Job execution time
+- `errors_total` — Errors by type/endpoint
+
+### Health Check
+
+The `/api/health` endpoint provides real-time system status:
+
+```bash
+curl http://localhost:8000/api/health
+```
+
+Response:
+
+```json
+{
+  "status": "ok",
+  "version": "1.0.0",
+  "checks": {
+    "database": "ok",
+    "redis": "ok",
+    "scheduler": "ok"
+  }
+}
+```
+
+Status values:
+- **ok** — All systems healthy
+- **degraded** — Some systems down but core functions work
+- **error** — Critical systems offline
+
+### Custom Tracing
+
+Create custom spans for internal operations:
+
+```python
+from monitoring import trace_operation, time_operation, record_db_operation
+
+@trace_operation("generate_brief")
+def generate_brief(project_id: int, session: Session):
+    # Record database operation
+    with time_operation("db_fetch", attributes={"entity": "project"}):
+        project = session.get(Project, project_id)
+        record_db_operation("select", "project", count=1)
+    
+    # Record expensive operation
+    with time_operation("llm_call", attributes={"model": "claude-opus"}):
+        brief = generate_with_llm(project)
+    
+    return brief
+```
+
+### Alerting
+
+Configure alerts in Sentry dashboard:
+
+1. **Error Rate Alert**: Trigger when error rate > 5%
+2. **Latency Alert**: Trigger when p95 latency > 1000ms
+3. **Resource Alert**: Trigger when DB connection pool > 90% utilized
+
+Default thresholds (in `monitoring.py`):
+
+- Slow database query: >500ms
+- Slow endpoint: >1000ms
+- Slow Celery task: >10000ms (10 seconds)
+
+---
+

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlmodel import Session, select
 from database import get_session
 from models import Project, Folder, Deliverable, Brief, ScrapeItem
@@ -7,6 +7,8 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 import json
+from monitoring import time_operation, trace_operation
+from services.query_optimization import PaginationParams, add_pagination
 
 router = APIRouter(prefix="/api", tags=["projects"])
 
@@ -15,13 +17,19 @@ class ProjectCreate(BaseModel):
     description: Optional[str] = None
 
 @router.get("/projects")
+@trace_operation("list_projects")
 def list_projects(
     auth: AuthContext = Depends(get_current_user),
-    session: Session = Depends(get_session)
+    session: Session = Depends(get_session),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(20, ge=1, le=100),
 ):
-    return session.exec(
-        select(Project).where(Project.organization_id == auth.org_id)
-    ).all()
+    """List projects for authenticated user's organization with pagination."""
+    with time_operation("db_query", attributes={"table": "project", "operation": "list"}):
+        pagination = PaginationParams(skip=skip, limit=limit)
+        query = select(Project).where(Project.organization_id == auth.org_id)
+        query = add_pagination(query, pagination)
+        return session.exec(query).all()
 
 @router.post("/projects")
 def create_project(
