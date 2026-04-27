@@ -57,6 +57,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from database import create_db_and_tables
 from middleware.request_logging import RequestLoggingMiddleware
 from middleware.csrf import CSRFMiddleware
+from personal_mode import is_personal
 from routers import (
     projects,
     chat,
@@ -84,15 +85,30 @@ from routers import (
 from config import settings
 from middleware.rate_limit import limiter, setup_rate_limiting
 
+def is_personal_mode() -> bool:
+    """Check if running in personal mode."""
+    from personal_mode import is_personal
+    return is_personal()
+
 app = FastAPI(title="ForgeOS API", version="1.0.0")
 
 setup_rate_limiting(app)
 
 # Request/response logging (method, path, status, latency, sizes, auth context)
+# This is always useful, even in personal mode
 app.add_middleware(RequestLoggingMiddleware)
 
-# CSRF protection middleware (before CORS to validate before cross-origin handling)
-app.add_middleware(CSRFMiddleware)
+# In multi-tenant mode, add CSRF and rate limiting
+if not is_personal_mode():
+    # CSRF protection middleware (before CORS to validate before cross-origin handling)
+    app.add_middleware(CSRFMiddleware)
+    
+    # Apply rate limiting in multi-tenant mode
+    settings.RATE_LIMIT_ENABLED = True
+else:
+    # In personal mode, disable rate limiting
+    settings.RATE_LIMIT_ENABLED = False
+
 
 # Parse CORS allowed origins from comma-separated env var
 allowed_origins = [origin.strip() for origin in settings.CORS_ALLOWED_ORIGINS.split(",") if origin.strip()]

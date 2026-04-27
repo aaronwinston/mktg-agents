@@ -53,7 +53,18 @@ class EntitlementsService:
     
     @staticmethod
     def check_entitlement(org: Organization, feature: str) -> EntitlementCheck:
-        """Check if organization is entitled to a feature."""
+        """Check if organization is entitled to a feature.
+        
+        In personal mode, all features are always allowed.
+        In multi-tenant mode, feature access is determined by the organization's plan.
+        """
+        from personal_mode import is_personal
+        
+        # In personal mode, everything is allowed
+        if is_personal():
+            return EntitlementCheck(allowed=True, reason='personal_mode', upgrade_path='')
+        
+        # Multi-tenant mode: check against plan matrix
         plan = EntitlementsService.get_plan(org)
         matrix = EntitlementsService.FEATURE_MATRIX.get(plan, {})
         
@@ -77,7 +88,17 @@ class EntitlementsService:
     
     @staticmethod
     def check_project_limit(org: Organization, current_projects: int) -> EntitlementCheck:
-        """Check if org can create another project."""
+        """Check if org can create another project.
+        
+        In personal mode, unlimited projects are allowed.
+        """
+        from personal_mode import is_personal
+        
+        # In personal mode, unlimited projects
+        if is_personal():
+            return EntitlementCheck(allowed=True, reason='personal_mode', upgrade_path='')
+        
+        # Multi-tenant mode: check against plan
         plan = EntitlementsService.get_plan(org)
         matrix = EntitlementsService.FEATURE_MATRIX.get(plan, {})
         
