@@ -163,13 +163,18 @@ export function streamChat(
   onChunk: (chunk: string) => void,
   onComplete?: () => void,
   onError?: (error: string) => void,
+  scrapeItemIds?: number[],
 ): () => void {
   const controller = new AbortController();
   
   fetch(`${API_BASE}/api/chat/stream`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ message, session_id: sessionId }),
+    body: JSON.stringify({
+      message,
+      session_id: sessionId,
+      scrape_item_ids: scrapeItemIds ?? [],
+    }),
     signal: controller.signal,
   }).then(async (res) => {
     if (!res.ok) {

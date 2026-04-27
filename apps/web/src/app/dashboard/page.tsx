@@ -14,7 +14,7 @@ export default function DashboardPage() {
   const [showLetsBuildModal, setShowLetsBuildModal] = useState(false);
   const router = useRouter();
   
-  const handleLetsBuildSuccess = (deliverable: any) => {
+  const handleLetsBuildSuccess = (deliverable: { id: number }) => {
     router.push(`/workspace/${deliverable.id}`);
   };
   
@@ -27,7 +27,7 @@ export default function DashboardPage() {
         </div>
         <div className="flex gap-2">
           <Button onClick={() => setShowLetsBuildModal(true)} className="bg-blue-600 hover:bg-blue-700">
-            ✨ Let's Build
+            ✨ Let&apos;s Build
           </Button>
           <Button onClick={() => setShowSessionModal(true)}>+ New session</Button>
         </div>

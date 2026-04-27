@@ -192,7 +192,7 @@ export default function TipTapEditor({
         <button
           onClick={applyBulletList}
           className={buttonClass}
-          title="Bullet List"
+          title="Bullet list"
           disabled={!editor}
         >
           <List size={18} />
@@ -208,7 +208,7 @@ export default function TipTapEditor({
         <button
           onClick={applyCodeBlock}
           className={buttonClass}
-          title="Code Block (Cmd+`)"
+          title="Code block (Cmd+`)"
           disabled={!editor}
         >
           <Code2 size={18} />

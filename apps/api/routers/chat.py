@@ -343,23 +343,27 @@ CRITICAL RULES:
 
 Do NOT output anything else after the JSON. The JSON is your final response."""
 
-    # Build toggle context from presets
-    toggle_context = ""
+    # Inject toggle context into system prompt (REQUIRED for agent to skip preset questions)
     if req.toggles:
-        toggle_context = "\n\nPreset Values (skip questions for these):\n"
+        preset_values = {}
         for k, v in req.toggles.items():
             if v:
+                preset_values[k] = v
+        
+        if preset_values:
+            toggle_context = "\n\nPRESET VALUES (Skip questions for these):\n"
+            for k, v in preset_values.items():
                 toggle_context += f"- {k}: {v}\n"
-    
-    # Inject system + toggles into messages
-    messages = req.messages.copy()
-    
+            system += toggle_context
+
     async def event_generator():
         full_response = ""
         try:
+            # Call stream_chat with system_override to use our state machine system prompt
             async for chunk in stream_chat(
-                messages=messages,
+                messages=req.messages,
                 toggles=req.toggles,
+                system_override=system,  # THIS APPLIES THE STATE MACHINE + PRESETS
             ):
                 full_response += chunk
                 yield f"data: {json.dumps({'chunk': chunk})}\n\n"
@@ -446,6 +450,11 @@ async def brief_yolo(req: BriefYoloRequest, session: Session = Depends(get_sessi
             body_md="",
         )
         session.add(deliverable)
+        session.flush()  # Get deliverable ID
+        
+        # Link Brief to Deliverable
+        brief.deliverable_id = deliverable.id
+        session.add(brief)
         
         # Commit both together (atomic)
         session.commit()
@@ -458,6 +467,7 @@ async def brief_yolo(req: BriefYoloRequest, session: Session = Depends(get_sessi
                 "title": brief.title,
                 "brief_md": brief.brief_md,
                 "toggles_json": brief.toggles_json,
+                "deliverable_id": brief.deliverable_id,
             },
             "deliverable": {
                 "id": deliverable.id,

@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { X, Send, Loader, ChevronDown } from 'lucide-react';
-import { streamChat } from '@/lib/api';
+import { X, Send, Loader } from 'lucide-react';
 
 interface Toggles {
   voice?: string;
@@ -69,7 +68,7 @@ export default function LetsBuildModal({ isOpen, onClose, onSuccess }: LetsBuild
 
   if (!isOpen) return null;
 
-  const handleToggleChange = (key: string, value: any) => {
+  const handleToggleChange = (key: string, value: string | string[]) => {
     setToggles((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -97,7 +96,7 @@ export default function LetsBuildModal({ isOpen, onClose, onSuccess }: LetsBuild
         {/* Header */}
         <div className="border-b p-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <h2 className="text-xl font-semibold">Let's Build</h2>
+            <h2 className="text-xl font-semibold">Let&apos;s Build</h2>
             <div className="flex gap-2">
               <button
                 onClick={() => handleModeChange('guided')}
@@ -200,7 +199,7 @@ export default function LetsBuildModal({ isOpen, onClose, onSuccess }: LetsBuild
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                   {messages.length === 0 && mode === 'guided' && (
                     <div className="text-center text-gray-500 mt-8">
-                      <p className="text-lg mb-2">Ask away, I'll learn as you talk</p>
+                      <p className="text-lg mb-2">Ask away, I&apos;ll learn as you talk</p>
                       <p className="text-sm">Tell me about what you want to create</p>
                     </div>
                   )}
@@ -397,7 +396,7 @@ export default function LetsBuildModal({ isOpen, onClose, onSuccess }: LetsBuild
                 isBriefComplete = true;
                 completeBriefMd = data.brief_md || assistantMessage;
               }
-            } catch (e) {
+            } catch {
               // Silent parse error
             }
           }
@@ -527,7 +526,7 @@ export default function LetsBuildModal({ isOpen, onClose, onSuccess }: LetsBuild
 
       if (!briefRes.ok) throw new Error('Failed to create brief');
 
-      const brief = await briefRes.json();
+      await briefRes.json();
 
       // Create deliverable (folder_id is now optional, will use default)
       const delRes = await fetch('/api/deliverables', {

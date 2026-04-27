@@ -62,6 +62,7 @@ async def stream_chat(
     context_refs: list[str] = None,
     scrape_items: list[dict] = None,
     toggles: dict = None,
+    system_override: str = None,
 ) -> AsyncGenerator[str, None]:
     tracer = get_tracer()
     user_message = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
@@ -77,35 +78,40 @@ async def stream_chat(
             span.set_attribute("skills", ", ".join(skill_names))
 
     try:
-        system_parts = [build_base_system_prompt()]
+        # Use system_override if provided, otherwise build from components
+        if system_override:
+            system = system_override
+        else:
+            system_parts = [build_base_system_prompt()]
 
-        if skill_names:
-            skill_text = build_skill_prompt(skill_names)
-            if skill_text:
-                system_parts.append(skill_text)
+            if skill_names:
+                skill_text = build_skill_prompt(skill_names)
+                if skill_text:
+                    system_parts.append(skill_text)
 
-        if context_refs:
-            ctx_text = build_context_prompt(context_refs)
-            if ctx_text:
-                system_parts.append(ctx_text)
+            if context_refs:
+                ctx_text = build_context_prompt(context_refs)
+                if ctx_text:
+                    system_parts.append(ctx_text)
 
-        if scrape_items:
-            items_text = "\n\n".join([
-                f"### {item.get('title', 'Untitled')}\nSource: {item.get('source_url', '')}\n{item.get('body', '')[:500]}"
-                for item in scrape_items[:5]
-            ])
-            system_parts.append(f"## Intelligence Context\n\n{items_text}")
+            if scrape_items:
+                items_text = "\n\n".join([
+                    f"### {item.get('title', 'Untitled')}\nSource: {item.get('source_url', '')}\n{item.get('body', '')[:500]}"
+                    for item in scrape_items[:5]
+                ])
+                system_parts.append(f"## Intelligence Context\n\n{items_text}")
 
-        if toggles:
-            toggle_text = f"""## Session Toggles
+            if toggles:
+                toggle_text = f"""## Session Toggles
 - audience: {toggles.get('audience', 'AI engineers and developer marketing professionals')}
 - voice: {toggles.get('voice', 'thoughtful')}
 - content_type: {toggles.get('content_type', 'not specified')}
 - brief_first: {toggles.get('brief_first', True)}
 """
-            system_parts.append(toggle_text)
+                system_parts.append(toggle_text)
 
-        system = "\n\n---\n\n".join(system_parts)
+            system = "\n\n---\n\n".join(system_parts)
+        
         full_response = ""
 
         provider = get_provider(settings.LLM_PROVIDER)

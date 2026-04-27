@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File
+from fastapi import APIRouter, UploadFile, File, HTTPException
 from services.file_engine import list_skills, list_context_layers, list_core_docs, REPO_ROOT
 import subprocess
 

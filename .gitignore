@@ -6,3 +6,6 @@ dist/
 build/
 .env
 briefs/drafts/
+*.db
+*.db
+*.db

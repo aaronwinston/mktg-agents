@@ -222,7 +222,7 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
               }).then(r => r.json());
               setMessages(prev => [...prev, { role: 'assistant', content: result.brief_md, id: Date.now() }]);
               setActiveTab('chat');
-            }} className="px-4 py-2 bg-black text-white rounded text-sm">Generate Brief from Prompt</button>
+            }} className="px-4 py-2 bg-black text-white rounded text-sm">Generate brief from prompt</button>
           </div>
         )}
       </div>

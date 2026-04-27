@@ -49,7 +49,7 @@ export function AgentChain({ session: initialSession, onUpdate }: AgentChainProp
         <h3 className="text-sm font-semibold text-fg-primary">Agent chain</h3>
         {session.status !== 'complete' && (
           <Button size="sm" onClick={handleRun} loading={running} disabled={running || session.status === 'active'}>
-            {session.status === 'active' ? 'Running…' : 'Run Chain'}
+            {session.status === 'active' ? 'Running…' : 'Run chain'}
           </Button>
         )}
       </div>

@@ -12,8 +12,8 @@ interface TreeItemModalProps {
 const CONTENT_TYPES = [
   { value: 'blog', label: 'Blog post' },
   { value: 'email', label: 'Email' },
-  { value: 'press-release', label: 'Press Release' },
-  { value: 'case-study', label: 'Case Study' },
+  { value: 'press-release', label: 'Press release' },
+  { value: 'case-study', label: 'Case study' },
   { value: 'whitepaper', label: 'Whitepaper' },
 ];
 

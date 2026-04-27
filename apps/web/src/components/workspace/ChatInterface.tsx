@@ -17,6 +17,7 @@ interface ChatInterfaceProps {
     id: number;
     brief_md: string;
     toggles_json?: string;
+    intelligence_items_json?: string;
   };
   sessionId?: number;
 }
@@ -26,6 +27,15 @@ export default function ChatInterface({
   briefData,
   sessionId,
 }: ChatInterfaceProps) {
+  const scrapeItemIds: number[] = (() => {
+    try {
+      return briefData?.intelligence_items_json
+        ? (JSON.parse(briefData.intelligence_items_json) as number[])
+        : [];
+    } catch {
+      return [];
+    }
+  })();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -76,7 +86,8 @@ export default function ChatInterface({
         // Stream error
         setError(errorMsg);
         setLoading(false);
-      }
+      },
+      scrapeItemIds,
     );
 
     // Cleanup function for component unmount

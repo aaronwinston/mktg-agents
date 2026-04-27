@@ -74,7 +74,7 @@ export default function CreateItemModal({
           <div className="p-4 space-y-4">
             <div>
               <label className="block text-sm font-medium mb-1">
-                {type === 'folder' ? 'Folder Name' : 'Title'}
+                {type === 'folder' ? 'Folder name' : 'Title'}
               </label>
               <input
                 type="text"
