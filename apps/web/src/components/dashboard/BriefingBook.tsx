@@ -123,7 +123,7 @@ export function BriefingBook() {
               onClick={handleRefresh}
               loading={refreshing}
             >
-              Refresh ↻
+              Refresh
             </Button>
           )}
         </div>

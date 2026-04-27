@@ -12,7 +12,7 @@ export function HeroSection() {
   return (
     <div>
       <h1 className="font-display text-3xl font-semibold text-fg-primary leading-tight">
-        Hi, aaron. What markets should we move today?
+        Hi, Aaron. What markets should we move today?
       </h1>
       <p className="text-fg-tertiary text-sm mt-2">
         {sessionCount === null ? (
