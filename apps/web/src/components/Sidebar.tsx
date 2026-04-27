@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import ProjectTree from '@/components/workspace/ProjectTree';
+import OrgSwitcher from '@/components/OrgSwitcher';
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -17,9 +18,12 @@ export default function Sidebar() {
 
   return (
     <aside className="w-56 border-r border-border bg-bg-secondary flex flex-col h-full">
-      <div className="p-4 border-b border-border">
-        <h1 className="font-bold text-sm text-fg-primary">ForgeOS</h1>
-        <p className="text-xs text-fg-tertiary">Marketing command center</p>
+      <div className="p-4 border-b border-border space-y-3">
+        <div>
+          <h1 className="font-bold text-sm text-fg-primary">ForgeOS</h1>
+          <p className="text-xs text-fg-tertiary">Marketing command center</p>
+        </div>
+        <OrgSwitcher />
       </div>
       <nav className="p-2 space-y-1">
         {navItems.map(item => (
@@ -41,4 +45,3 @@ export default function Sidebar() {
     </aside>
   );
 }
-

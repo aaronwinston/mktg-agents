@@ -18,7 +18,7 @@ def get_db():
 
 @router.get("/insights")
 def get_search_insights(
-    user_id: str = "aaron",
+    auth: AuthContext = Depends(get_current_user),
     skip: int = 0,
     limit: int = 50,
     momentum_filter: str = None,  # rising|falling|steady|no_data|null=all
@@ -36,7 +36,7 @@ def get_search_insights(
         List of SearchInsight rows with topic, position, trends momentum, reasoning
     """
     try:
-        query = select(SearchInsight).where(SearchInsight.user_id == user_id)
+        query = select(SearchInsight).where(SearchInsight.organization_id == auth.org_id)
         
         if momentum_filter and momentum_filter in ["rising", "falling", "steady", "no_data"]:
             query = query.where(SearchInsight.trends_momentum == momentum_filter)
@@ -58,7 +58,7 @@ def get_search_insights(
                 for insight in insights
             ],
             "total_count": session.exec(
-                select(SearchInsight).where(SearchInsight.user_id == user_id)
+                select(SearchInsight).where(SearchInsight.organization_id == auth.org_id)
             ).all().__len__()
         }
         
@@ -68,7 +68,7 @@ def get_search_insights(
 
 
 @router.get("/insights/stats")
-def get_search_insights_stats(user_id: str = "aaron", session: Session = Depends(get_db)):
+def get_search_insights_stats(auth: AuthContext = Depends(get_current_user), session: Session = Depends(get_db)):
     """
     Get summary statistics on search insights.
     
@@ -77,7 +77,7 @@ def get_search_insights_stats(user_id: str = "aaron", session: Session = Depends
     """
     try:
         all_insights = session.exec(
-            select(SearchInsight).where(SearchInsight.user_id == user_id)
+            select(SearchInsight).where(SearchInsight.organization_id == auth.org_id)
         ).all()
         
         stats = {
