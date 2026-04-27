@@ -1,4 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
+from typing import Optional
 from services.file_engine import list_skills, list_context_layers, list_core_docs, REPO_ROOT
 import subprocess
 
@@ -106,7 +107,7 @@ def get_scrape_config():
 async def upload_file(
     file: UploadFile = File(...),
     destination: str = "reference",
-    project_id: str | None = None,
+    project_id: Optional[str] = None,
 ):
     """
     Parse and append an uploaded document to a destination context file.
@@ -175,7 +176,7 @@ def _parse_upload(raw: bytes, ext: str, filename: str) -> str:
     return raw.decode("utf-8", errors="replace")
 
 
-def _resolve_destination(destination: str, filename: str, project_id: str | None):
+def _resolve_destination(destination: str, filename: str, project_id: Optional[str]):
     """Map destination key to absolute Path."""
     import re
     mapping = {

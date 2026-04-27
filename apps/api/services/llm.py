@@ -1,6 +1,6 @@
 """LLM Provider abstraction layer for pluggable AI backends."""
 
-from typing import AsyncGenerator, Protocol, Optional
+from typing import AsyncGenerator, Protocol, Optional, Union, Dict
 from config import settings
 import anthropic
 
@@ -128,10 +128,10 @@ class OpenAIProvider:
 
 
 # Global provider cache
-_providers: dict[str, AnthropicProvider | OpenAIProvider] = {}
+_providers: Dict[str, Union[AnthropicProvider, OpenAIProvider]] = {}
 
 
-def get_provider(name: str = "anthropic") -> AnthropicProvider | OpenAIProvider:
+def get_provider(name: str = "anthropic") -> Union[AnthropicProvider, OpenAIProvider]:
     """Get or create an LLM provider by name.
     
     Args:
