@@ -23,9 +23,11 @@ The whole system is built on a single bet: that the gap between AI-generated slo
  
 ## Why I built this
  
-I run content, comms, and analyst relations at Arize. The job demands a small team's worth of output from one person. The available tools either generated faster slop or organized slower slop. Neither solved the actual problem.
+I do a lot of work, and my job demands a small team's worth of output from one person (me). The available tools either generated faster slop or organized slower slop. Neither solved the actual problem.
+
+So I slopped up my own tool (you're looking at it). 
  
-The actual problem: every output needs voice, point of view, and technical fluency that doesn't survive a generic prompt. Loading those things into context manually, every time, doesn't scale. Saving prompts in a Notion doc doesn't scale either, because prompts decay and Notion isn't a runtime.
+The actual problem I was trying to solve? every output needs voice, point of view, and technical fluency that doesn't survive a generic prompt. Loading those things into context manually, every time, doesn't scale. Saving prompts in a Notion doc doesn't scale either, because prompts decay and Notion isn't a runtime.
  
 ForgeOS is what happens when you treat your editorial standards as code, version them, and put a runtime in front of them.
  
