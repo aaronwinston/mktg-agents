@@ -1,5 +1,8 @@
 'use client';
 
+import { useState } from 'react';
+import BriefEditor from './BriefEditor';
+
 interface BriefTabProps {
   deliverable: {
     id: number;
@@ -7,18 +10,38 @@ interface BriefTabProps {
   };
   brief?: {
     id: number;
+    title?: string;
+    audience?: string;
+    description?: string;
     brief_md: string;
+    toggles_json?: string;
   };
 }
 
 export default function BriefTab({ deliverable, brief }: BriefTabProps) {
-  return (
-    <div className="h-full flex flex-col items-center justify-center text-center">
-      <div className="space-y-2">
-        <p className="text-sm font-medium text-gray-700">📋 Brief editor coming soon</p>
-        <p className="text-xs text-gray-500">Brief editor for: {deliverable.title}</p>
-        {brief && <p className="text-xs text-gray-400 mt-2">Brief ID: {brief.id}</p>}
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleBriefChange = () => {
+    setIsLoading(true);
+    window.location.reload();
+  };
+
+  if (!brief) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center text-center">
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-gray-700">📋 No brief yet</p>
+          <p className="text-xs text-gray-500">Create a brief to get started</p>
+        </div>
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <BriefEditor
+      brief={brief}
+      deliverableId={deliverable.id}
+      onChange={handleBriefChange}
+    />
   );
 }
