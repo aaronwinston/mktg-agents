@@ -7,10 +7,26 @@ import Link from 'next/link';
 
 export function ActiveSessions() {
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    getSessions().then(all => setSessions(all.filter(s => s.status === 'active' || s.status === 'pending').slice(0, 5)));
+    getSessions()
+      .then(all => setSessions(all.filter(s => s.status === 'active' || s.status === 'pending').slice(0, 5)))
+      .finally(() => setLoading(false));
   }, []);
+  
+  if (loading) {
+    return (
+      <section>
+        <h2 className="text-base font-semibold text-fg-primary mb-3">Active Sessions</h2>
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-12 border border-border rounded-xl bg-bg-secondary animate-pulse" />
+          ))}
+        </div>
+      </section>
+    );
+  }
   
   if (sessions.length === 0) return null;
   

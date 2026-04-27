@@ -1,84 +1,141 @@
 'use client';
+
 import { useEffect, useState } from 'react';
-import MarkdownEditor from '@/components/MarkdownEditor';
+import EngineTree from '@/components/settings/EngineTree';
+import EngineEditor from '@/components/settings/EngineEditor';
+import SettingsConfig from '@/components/settings/SettingsConfig';
+import { AlertCircle } from 'lucide-react';
+
+type Tab = 'engine' | 'settings';
 
 export default function SettingsPage() {
-  const [tree, setTree] = useState<Record<string, string[]>>({});
   const [selectedPath, setSelectedPath] = useState<string | null>(null);
-  const [fileContent, setFileContent] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [saveMsg, setSaveMsg] = useState('');
+  const [isDirty, setIsDirty] = useState(false);
+  const [activeTab, setActiveTab] = useState<Tab>('engine');
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null);
 
+  // Handle navigation with unsaved changes warning
   useEffect(() => {
-    fetch('http://localhost:8000/api/files/tree').then(r => r.json()).then(setTree).catch(console.error);
-  }, []);
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
 
-  const openFile = async (path: string) => {
-    setSelectedPath(path);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const file: any = await fetch(`http://localhost:8000/api/files/read?path=${encodeURIComponent(path)}`).then(r => r.json());
-    setFileContent(file.raw);
-    setSaveMsg('');
-  };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
 
-  const saveFile = async () => {
-    if (!selectedPath) return;
-    setSaving(true);
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result: any = await fetch('http://localhost:8000/api/files/write', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: selectedPath, content: fileContent }),
-      }).then(r => r.json());
-      setSaveMsg(result.lint_warnings?.length ? 'Saved with warnings' : 'Saved.');
-    } catch (e: unknown) {
-      setSaveMsg(`Error: ${e instanceof Error ? e.message : String(e)}`);
+  function handleTabChange(tab: Tab) {
+    if (isDirty && activeTab === 'engine') {
+      setShowUnsavedWarning(true);
+      setPendingNavigation(`tab:${tab}`);
+    } else {
+      setActiveTab(tab);
+      setIsDirty(false);
     }
-    setSaving(false);
-  };
+  }
 
-  const EDITABLE_DIRS = ['context', 'core', 'skills', 'playbooks', 'rubrics', 'prompts'];
+  function handleSelectFile(path: string) {
+    if (isDirty && selectedPath !== null) {
+      setShowUnsavedWarning(true);
+      setPendingNavigation(`file:${path}`);
+    } else {
+      setSelectedPath(path);
+      setIsDirty(false);
+    }
+  }
+
+  function handleNavigateToFile(path: string) {
+    handleSelectFile(path);
+  }
+
+  function confirmUnsavedNavigation() {
+    setShowUnsavedWarning(false);
+    if (pendingNavigation?.startsWith('tab:')) {
+      const tab = pendingNavigation.split(':')[1] as Tab;
+      setActiveTab(tab);
+      setIsDirty(false);
+    } else if (pendingNavigation?.startsWith('file:')) {
+      const path = pendingNavigation.split(':').slice(1).join(':');
+      setSelectedPath(path);
+      setIsDirty(false);
+    }
+    setPendingNavigation(null);
+  }
 
   return (
-    <div className="p-6 flex gap-4 h-full">
-      <div className="w-64 shrink-0 border rounded-lg overflow-auto">
-        <div className="p-3 border-b"><h2 className="text-sm font-medium">Files</h2></div>
-        <div className="p-2 space-y-4">
-          {EDITABLE_DIRS.map(dir => (
-            <div key={dir}>
-              <p className="text-xs font-semibold text-gray-500 uppercase px-2 mb-1">{dir}/</p>
-              {(tree[dir] || []).map(path => (
-                <button
-                  key={path}
-                  onClick={() => openFile(path)}
-                  className={`w-full text-left text-xs px-2 py-1 rounded hover:bg-gray-100 truncate block ${selectedPath === path ? 'bg-gray-100' : ''}`}
-                >
-                  {path.replace(`${dir}/`, '')}
-                </button>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="flex-1 flex flex-col gap-2">
-        {selectedPath ? (
-          <>
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-mono text-gray-500">{selectedPath}</p>
-              <div className="flex items-center gap-2">
-                {saveMsg && <span className="text-xs text-gray-500">{saveMsg}</span>}
-                <button onClick={saveFile} disabled={saving} className="px-3 py-1 bg-black text-white rounded text-sm disabled:opacity-50">
-                  {saving ? 'Saving...' : 'Save'}
-                </button>
+    <div className="flex flex-col h-full bg-white">
+      {/* Unsaved changes warning modal */}
+      {showUnsavedWarning && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-lg max-w-md p-6 space-y-4">
+            <div className="flex gap-3">
+              <AlertCircle size={20} className="text-orange-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-bold text-gray-900">Unsaved Changes</h3>
+                <p className="text-sm text-gray-600 mt-1">You have unsaved changes in {selectedPath?.split('/').pop() || 'the file'}. Do you want to leave without saving?</p>
               </div>
             </div>
-            <MarkdownEditor value={fileContent} onChange={setFileContent} />
+            <div className="flex gap-2 justify-end pt-4">
+              <button
+                onClick={() => setShowUnsavedWarning(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200 font-medium text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmUnsavedNavigation}
+                className="px-4 py-2 text-white bg-orange-600 rounded hover:bg-orange-700 font-medium text-sm"
+              >
+                Leave Without Saving
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div className="border-b bg-gray-50 sticky top-0 z-10">
+        <div className="flex">
+          <button
+            onClick={() => handleTabChange('engine')}
+            className={`px-6 py-3 font-medium text-sm border-b-2 transition ${
+              activeTab === 'engine'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Engine Files
+          </button>
+          <button
+            onClick={() => handleTabChange('settings')}
+            className={`px-6 py-3 font-medium text-sm border-b-2 transition ${
+              activeTab === 'settings'
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Settings & Integrations
+          </button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-hidden flex">
+        {activeTab === 'engine' ? (
+          <>
+            <EngineTree selectedPath={selectedPath} onSelect={handleSelectFile} />
+            <EngineEditor
+              filePath={selectedPath}
+              isDirty={isDirty}
+              onDirtyChange={setIsDirty}
+            />
           </>
         ) : (
-          <div className="border rounded-lg p-6">
-            <p className="text-gray-500">Select a file from the tree to edit it.</p>
-          </div>
+          <SettingsConfig onNavigateTo={handleNavigateToFile} />
         )}
       </div>
     </div>

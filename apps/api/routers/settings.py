@@ -1,6 +1,7 @@
 from fastapi import APIRouter, UploadFile, File
 from services.file_engine import list_skills, list_context_layers, list_core_docs, REPO_ROOT
 import shutil
+import subprocess
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
@@ -15,6 +16,92 @@ def get_skill_files():
 @router.get("/core")
 def get_core_files():
     return list_core_docs()
+
+@router.get("/references")
+def get_references(path: str):
+    """Get count of skills and playbooks that reference a given file"""
+    skills_count = 0
+    playbooks_count = 0
+    
+    try:
+        # Search for references in skills
+        result = subprocess.run(
+            ["grep", "-r", "--", path],
+            cwd=str(REPO_ROOT / "skills"),
+            capture_output=True,
+            text=True
+        )
+        if result.stdout:
+            skills_count = len(set(l.split(":")[0] for l in result.stdout.strip().split("\n") if l))
+        
+        # Search for references in playbooks
+        result = subprocess.run(
+            ["grep", "-r", "--", path],
+            cwd=str(REPO_ROOT / "playbooks"),
+            capture_output=True,
+            text=True
+        )
+        if result.stdout:
+            playbooks_count = len(set(l.split(":")[0] for l in result.stdout.strip().split("\n") if l))
+    except Exception:
+        pass
+    
+    return {"skills": skills_count, "playbooks": playbooks_count}
+
+@router.get("/api-keys")
+def get_api_keys():
+    """Get masked API keys from environment"""
+    import os
+    keys = []
+    key_names = ["ANTHROPIC_API_KEY", "OPENAI_API_KEY", "GITHUB_TOKEN"]
+    
+    for key_name in key_names:
+        value = os.getenv(key_name, "")
+        if value:
+            masked = value[:3] + "*" * max(0, len(value) - 6) + value[-3:] if len(value) > 6 else "*" * len(value)
+            keys.append({
+                "name": key_name,
+                "value": value,
+                "masked": masked
+            })
+    
+    return keys
+
+@router.get("/scrape-config")
+def get_scrape_config():
+    """Get scrape configuration"""
+    return [
+        {
+            "id": "hackernews",
+            "name": "Hacker News",
+            "enabled": True,
+            "params": {"daily_limit": "30"}
+        },
+        {
+            "id": "github",
+            "name": "GitHub",
+            "enabled": True,
+            "params": {"topics": "ai, machine-learning", "stars_min": "100"}
+        },
+        {
+            "id": "arxiv",
+            "name": "ArXiv",
+            "enabled": True,
+            "params": {"categories": "cs.AI, cs.LG"}
+        },
+        {
+            "id": "reddit",
+            "name": "Reddit",
+            "enabled": False,
+            "params": {"subreddits": "MachineLearning, artificial"}
+        },
+        {
+            "id": "rss",
+            "name": "RSS Feeds",
+            "enabled": False,
+            "params": {}
+        }
+    ]
 
 @router.post("/upload")
 async def upload_file(file: UploadFile = File(...)):

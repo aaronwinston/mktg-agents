@@ -7,10 +7,12 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
   const projectId = parseInt(params.id);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [folders, setFolders] = useState<any[]>([]);
+  const [foldersLoading, setFoldersLoading] = useState(true);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedFolder, setSelectedFolder] = useState<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [deliverables, setDeliverables] = useState<any[]>([]);
+  const [deliverablesLoading, setDeliverablesLoading] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedDeliverable, setSelectedDeliverable] = useState<any>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -32,7 +34,12 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch(`http://localhost:8000/api/projects/${projectId}/folders`).then(r => r.json()).then(setFolders).catch(console.error);
+    setFoldersLoading(true);
+    fetch(`http://localhost:8000/api/projects/${projectId}/folders`)
+      .then(r => r.json())
+      .then(setFolders)
+      .catch(console.error)
+      .finally(() => setFoldersLoading(false));
     fetch('http://localhost:8000/api/chat/session', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -44,7 +51,12 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
 
   useEffect(() => {
     if (selectedFolder) {
-      fetch(`http://localhost:8000/api/folders/${selectedFolder.id}/deliverables`).then(r => r.json()).then(setDeliverables).catch(console.error);
+      setDeliverablesLoading(true);
+      fetch(`http://localhost:8000/api/folders/${selectedFolder.id}/deliverables`)
+        .then(r => r.json())
+        .then(setDeliverables)
+        .catch(console.error)
+        .finally(() => setDeliverablesLoading(false));
     }
   }, [selectedFolder]);
 
@@ -95,21 +107,41 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
     <div className="flex h-full">
       <aside className="w-48 border-r p-3 space-y-2 overflow-auto">
         <p className="text-xs font-semibold text-gray-500 uppercase">Folders</p>
-        {folders.map(f => (
-          <button key={f.id} onClick={() => setSelectedFolder(f)}
-            className={`w-full text-left text-xs px-2 py-1.5 rounded ${selectedFolder?.id === f.id ? 'bg-gray-100' : 'hover:bg-gray-50'}`}>
-            {f.name}
-          </button>
-        ))}
+        {foldersLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-6 bg-gray-100 rounded animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <>
+            {folders.map(f => (
+              <button key={f.id} onClick={() => setSelectedFolder(f)}
+                className={`w-full text-left text-xs px-2 py-1.5 rounded ${selectedFolder?.id === f.id ? 'bg-gray-100' : 'hover:bg-gray-50'}`}>
+                {f.name}
+              </button>
+            ))}
+          </>
+        )}
         <button className="text-xs text-gray-500 hover:text-gray-700 w-full text-left" onClick={() => setShowFolderModal(true)}>+ New folder</button>
         {selectedFolder && (<>
           <p className="text-xs font-semibold text-gray-500 uppercase mt-3">Deliverables</p>
-          {deliverables.map(d => (
-            <button key={d.id} onClick={() => setSelectedDeliverable(d)}
-              className={`w-full text-left text-xs px-2 py-1.5 rounded ${selectedDeliverable?.id === d.id ? 'bg-gray-100' : 'hover:bg-gray-50'}`}>
-              <span className="inline-block border rounded px-1 text-[10px] mr-1">{d.content_type}</span>{d.title}
-            </button>
-          ))}
+          {deliverablesLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-6 bg-gray-100 rounded animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <>
+              {deliverables.map(d => (
+                <button key={d.id} onClick={() => setSelectedDeliverable(d)}
+                  className={`w-full text-left text-xs px-2 py-1.5 rounded ${selectedDeliverable?.id === d.id ? 'bg-gray-100' : 'hover:bg-gray-50'}`}>
+                  <span className="inline-block border rounded px-1 text-[10px] mr-1">{d.content_type}</span>{d.title}
+                </button>
+              ))}
+            </>
+          )}
           <button className="text-xs text-gray-500 hover:text-gray-700 w-full text-left" onClick={() => setShowDeliverableModal(true)}>+ New deliverable</button>
         </>)}
       </aside>
