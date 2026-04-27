@@ -122,6 +122,16 @@ async def pull_gsc_data(user_id: str = "aaron", gsc_property: Optional[str] = No
             logger.warning(f"No OAuth token found for user {user_id}; skipping GSC pull")
             return {"status": "skipped", "reason": "No OAuth token"}
         
+        # Refresh token if needed
+        if oauth.is_token_expired():
+            logger.info(f"OAuth token expired for user {user_id}, refreshing...")
+            if not oauth.refresh_if_needed():
+                logger.error(f"Failed to refresh OAuth token for user {user_id}")
+                return {"status": "skipped", "reason": "Token refresh failed"}
+            session.add(oauth)
+            session.commit()
+            logger.info(f"OAuth token refreshed for user {user_id}")
+        
         access_token = oauth.access_token
         refresh_token = oauth.refresh_token
         

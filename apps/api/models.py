@@ -152,6 +152,35 @@ class CalendarIntegration(SQLModel, table=True):
             return
         cipher = Fernet(settings.ENCRYPTION_KEY)
         self.refresh_token_encrypted = cipher.encrypt(value.encode()).decode()
+    
+    def is_token_expired(self) -> bool:
+        """Check if access token is expired."""
+        if not self.expires_at:
+            return True
+        return datetime.utcnow() >= self.expires_at
+    
+    def refresh_if_needed(self):
+        """Refresh OAuth token if expired."""
+        from services.oauth import refresh_oauth_token_if_needed
+        
+        if not self.is_token_expired():
+            return False
+        
+        try:
+            new_access, new_refresh = refresh_oauth_token_if_needed(
+                self.access_token,
+                self.refresh_token,
+                self.expires_at
+            )
+            self.access_token = new_access
+            self.refresh_token = new_refresh
+            self.updated_at = datetime.utcnow()
+            return True
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Token refresh failed: {str(e)}")
+            return False
 
 class CalendarEvent(SQLModel, table=True):
     """
