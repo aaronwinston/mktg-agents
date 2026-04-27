@@ -1,6 +1,5 @@
-# ForgeOS
+<img width="1082" height="607" alt="Screenshot 2026-04-26 at 9 18 56 PM" src="https://github.com/user-attachments/assets/e712f82b-f49a-47f8-9cef-37784dafd509" />
 
-![ForgeOS — AI-native editorial and marketing operating system](assets/hero.svg)
 
 ## What is ForgeOS
 
