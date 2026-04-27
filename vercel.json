@@ -2,17 +2,8 @@
   "buildCommand": "cd apps/web && npm run build",
   "outputDirectory": "apps/web/.next",
   "installCommand": "npm install",
-  "env": {
-    "NEXT_PUBLIC_API_BASE_URL": "@next_public_api_base_url"
-  },
   "framework": "nextjs",
   "regions": ["sfo1"],
-  "functions": {
-    "api/**": {
-      "memory": 1024,
-      "maxDuration": 60
-    }
-  },
   "rewrites": [
     {
       "source": "/api/:path*",
