@@ -290,3 +290,107 @@ def workspace_from_briefing_item(
     session.commit()
 
     return {"deliverable_id": deliverable.id, "brief_id": brief.id}
+
+
+class CalendarEventCreate(BaseModel):
+    deliverable_id: int
+    title: str
+    description: Optional[str] = None
+    start_at: datetime
+    end_at: datetime
+
+
+@router.post("/calendar/events")
+def create_calendar_event(data: CalendarEventCreate, session: Session = Depends(get_session)):
+    """
+    Create a calendar event linked to a deliverable.
+    
+    Event is created locally immediately and synced to Google Calendar asynchronously.
+    Frontend receives event ID and sync status right away.
+    """
+    from services.calendar import create_event_atomic
+    
+    try:
+        event = create_event_atomic(
+            title=data.title,
+            start_at=data.start_at,
+            end_at=data.end_at,
+            deliverable_id=data.deliverable_id,
+            description=data.description,
+        )
+        return {
+            "status": "created",
+            "event": event,
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create calendar event: {str(e)}")
+
+
+@router.get("/calendar/events/{deliverable_id}")
+def get_calendar_event(deliverable_id: int, session: Session = Depends(get_session)):
+    """Get calendar event for a deliverable."""
+    from models import CalendarEvent
+    
+    event = session.exec(
+        select(CalendarEvent).where(CalendarEvent.deliverable_id == deliverable_id)
+    ).first()
+    
+    if not event:
+        raise HTTPException(status_code=404, detail="No calendar event for this deliverable")
+    
+    return {
+        "id": event.id,
+        "title": event.title,
+        "description": event.description,
+        "start_at": event.start_at.isoformat(),
+        "end_at": event.end_at.isoformat(),
+        "status": event.status,
+        "google_event_id": event.google_event_id,
+        "synced_to_google_at": event.synced_to_google_at.isoformat() if event.synced_to_google_at else None,
+        "last_synced_at": event.last_synced_at.isoformat() if event.last_synced_at else None,
+    }
+
+
+@router.put("/calendar/events/{event_id}")
+def update_calendar_event(event_id: int, data: CalendarEventCreate, session: Session = Depends(get_session)):
+    """Update a calendar event."""
+    from models import CalendarEvent
+    from services.calendar import sync_to_google
+    
+    event = session.get(CalendarEvent, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Calendar event not found")
+    
+    event.title = data.title
+    event.description = data.description
+    event.start_at = data.start_at
+    event.end_at = data.end_at
+    event.updated_at = datetime.utcnow()
+    session.add(event)
+    session.commit()
+    
+    sync_to_google(event_id)
+    
+    return {
+        "status": "updated",
+        "event_id": event_id,
+    }
+
+
+@router.delete("/calendar/events/{event_id}")
+def delete_calendar_event(event_id: int, session: Session = Depends(get_session)):
+    """Delete a calendar event (archives it, doesn't hard-delete)."""
+    from models import CalendarEvent
+    
+    event = session.get(CalendarEvent, event_id)
+    if not event:
+        raise HTTPException(status_code=404, detail="Calendar event not found")
+    
+    event.status = "archived"
+    event.updated_at = datetime.utcnow()
+    session.add(event)
+    session.commit()
+    
+    return {"status": "archived", "event_id": event_id}
