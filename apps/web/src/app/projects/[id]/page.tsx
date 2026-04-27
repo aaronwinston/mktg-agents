@@ -218,6 +218,43 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
             onChange={e => setToggles(t => ({ ...t, playbook: e.target.value }))} placeholder="auto" />
         </div>
       </aside>
+
+      <CreateItemModal
+        isOpen={showFolderModal}
+        type="folder"
+        onClose={() => setShowFolderModal(false)}
+        onCreate={async (data) => {
+          const response = await fetch('http://localhost:8000/api/folders', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ project_id: projectId, name: data.name }),
+          });
+          if (!response.ok) throw new Error('Failed to create folder');
+          fetch(`http://localhost:8000/api/projects/${projectId}/folders`).then(r => r.json()).then(setFolders);
+        }}
+      />
+
+      <CreateItemModal
+        isOpen={showDeliverableModal}
+        type="deliverable"
+        defaultContentType={toggles.content_type}
+        contentTypes={CONTENT_TYPES}
+        onClose={() => setShowDeliverableModal(false)}
+        onCreate={async (data) => {
+          if (!selectedFolder) throw new Error('Select a folder first');
+          const response = await fetch('http://localhost:8000/api/deliverables', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              folder_id: selectedFolder.id,
+              content_type: data.contentType || toggles.content_type,
+              title: data.name,
+            }),
+          });
+          if (!response.ok) throw new Error('Failed to create deliverable');
+          fetch(`http://localhost:8000/api/folders/${selectedFolder.id}/deliverables`).then(r => r.json()).then(setDeliverables);
+        }}
+      />
     </div>
   );
 }

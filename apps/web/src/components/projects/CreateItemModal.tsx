@@ -7,7 +7,7 @@ interface CreateItemModalProps {
   type: 'folder' | 'deliverable';
   onClose: () => void;
   onCreate: (data: { name?: string; contentType?: string }) => Promise<void>;
-  contentTypes?: string[];
+  contentTypes?: readonly string[];
   defaultContentType?: string;
 }
 

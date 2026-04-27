@@ -2,81 +2,13 @@
 
 ![ForgeOS — AI-native editorial and marketing operating system](assets/hero.svg)
 
-**An AI-native editorial and marketing operating system.**
+## What is ForgeOS
 
-Most AI writing tools give you a chat box. ForgeOS gives you an editorial team — a sequenced chain of specialized agents that take a brief and run it through research, drafting, review, fact-checking, SEO, legal risk, and distribution planning before handing you a finished document.
-
-It runs locally. It costs nothing beyond your Anthropic API key. And the whole thing is built on a markdown knowledge base you own and control.
+ForgeOS is a **local-first marketing command center** that wraps a markdown-based "engine" of voice rules, skills, playbooks, and context with a Next.js cockpit. You use it to produce developer marketing at the throughput of a small team. The markdown directories at the repo root (`core/`, `context/`, `skills/`, `playbooks/`, `rubrics/`, `briefs/`, `prompts/`) are the system's brain and remain canonical — the app reads from and writes to them. The database (SQLite via SQLModel) holds runtime state only: projects, folders, deliverables, briefs, chat sessions and messages, scrape items, and pipeline run state.
 
 ---
 
-## Why this exists
-
-Marketing teams that build with AI usually hit the same wall: the output is fast but generic. It doesn't sound like you. It doesn't know your voice, your audience, your claims policy, or your brand standards. You spend as much time editing as you would have spent writing.
-
-ForgeOS is built around a different premise. Before any agent writes a word, it reads your voice guide, your style standards, your messaging framework, your claims policy, and your editorial principles. The context isn't bolted on — it's the foundation.
-
-The result is content that actually sounds like you came out of it. Faster, but not at the cost of quality or brand consistency.
-
----
-
-## What it does
-
-**Two layers work together:**
-
-### 1. The Engine (the markdown brain)
-
-A structured knowledge base at the repo root. These files are the source of truth for everything the agents know about your brand, voice, and standards:
-
-| Directory | What lives here |
-|-----------|-----------------|
-| `core/` | Voice guide, style guide, claims policy, brand standards, editorial principles |
-| `context/` | 8-layer context system — philosophy through research |
-| `skills/` | 19 specialist agent definitions (researcher, copywriter, SEO, legal, and more) |
-| `playbooks/` | Sequenced production workflows for each content type |
-| `rubrics/` | Quality scoring rubrics used during review |
-| `briefs/` | Intake brief templates for every content type |
-| `prompts/` | Reusable prompt templates |
-| `examples/` | Reference outputs at different quality tiers |
-
-You edit these files. Agents read them. The system improves as the knowledge base improves.
-
-### 2. The Cockpit (the web app)
-
-A local Next.js dashboard that wraps the engine with a UI:
-
-- **Dashboard** — daily briefing feed powered by Claude (pulls from Hacker News, GitHub Trending, and ArXiv), active session status, and a daily rotating quote
-- **Sessions** — create content sessions, run the 11-agent chain, watch agents work in real time, and edit the final output
-- **Agent Tracker** — a persistent right panel showing which agent is active, what it's doing, and where you are in the chain
-- **Chat** — context-aware streaming chat with the full system prompt loaded
-- **Intelligence** — scraped and scored items from the web, ready to use as source material
-- **Projects** — organize sessions into projects
-
----
-
-## The agent chain
-
-Every content session runs through 11 specialist agents in sequence. Each one reads the accumulated output from the previous agent, applies its skill set, and passes an improved draft forward.
-
-```
-editorial-director    →  Sets strategy, frames the narrative
-ai-researcher         →  Gathers sources, validates claims
-dev-copywriter        →  Writes the draft
-dev-reviewer          →  Tightens copy, improves structure
-technical-fact-checker →  Verifies technical accuracy
-seo-strategist        →  Optimizes for search without sacrificing voice
-copy-chief            →  Final editorial pass
-claims-risk-reviewer  →  Flags unsupported or risky claims
-final-publish-reviewer →  Publish readiness check
-social-editor         →  Derives social content from the piece
-content-ops-manager   →  Distribution and repurposing plan
-```
-
-Each agent loads its own `SKILL.md` file before running, so its behavior is fully inspectable and editable. Change the skill file, change the agent.
-
----
-
-## Getting started
+## How to run
 
 ### Prerequisites
 
@@ -84,14 +16,7 @@ Each agent loads its own `SKILL.md` file before running, so its behavior is full
 - Node.js 18+
 - An [Anthropic API key](https://console.anthropic.com/)
 
-### 1. Clone the repo
-
-```bash
-git clone https://github.com/aaronwinston/forgeos.git
-cd forgeos
-```
-
-### 2. Start the backend
+### Backend (API)
 
 ```bash
 cd apps/api
@@ -101,24 +26,19 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Open `.env` and add your key:
+Edit `.env` and add your key:
 ```
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-Then run:
+Then start the API:
 ```bash
-python -m uvicorn main:app --reload --port 8000
+python -m uvicorn main:app --reload
 ```
 
-On first run, seed the demo sessions:
-```bash
-python scripts/seed_demo.py
-```
+The API runs at `http://localhost:8000`. Check `/api/health` to confirm it's up.
 
-The API will be live at `http://localhost:8000`. Check `http://localhost:8000/api/health` to confirm.
-
-### 3. Start the frontend
+### Frontend (Web App)
 
 ```bash
 cd apps/web
@@ -126,130 +46,111 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`. The dashboard loads instantly — quote, layout, and nav are all static. The briefing feed and session data come from the local API.
-
-> **If the API isn't running**, the app shows a friendly message with the command to start it. Nothing breaks. Nothing red.
+Open `http://localhost:3000`. The dashboard loads instantly — quote, layout, and nav are all static. Data comes from the local API.
 
 ---
 
-## How to use it
+## Architecture overview
 
-### Run a content session
+ForgeOS has two run modes:
 
-1. Click **+ New Session** on the dashboard or the Sessions page
-2. Give it a title, type (blog, email, social, launch), audience, and a description or brief
-3. Open the session and click **Run Chain**
-4. Watch the agents work in the Agent Tracker on the right
-5. When the chain completes, the final document is in the editor — copy it, edit it, ship it
+### Chat mode
+Conversational, optionally producing a brief first, optionally executing a playbook to produce a deliverable. This is the primary path. You interact with the system in `/workspace`, where you can chat, edit briefs, and manage deliverables. Backed by `ChatSession`, `ChatMessage`, `Brief`, `Deliverable` in the database.
 
-### Refresh the briefing feed
+### Pipeline mode
+Fire-and-forget execution of the full agent chain against a single prompt. The system runs 11 specialized agents in sequence, each reading the brief and the previous agent's output, then passing an improved draft forward. Backed by `PipelineRun` in the database. Legacy "Sessions" UI.
 
-Click **Refresh briefing ↻** on the dashboard. The backend pulls top stories from Hacker News, GitHub Trending, and ArXiv, sends them to Claude for editorial filtering, and returns the 8 most relevant stories for your team — each with a content angle attached.
-
-Results are cached for 30 minutes so you're not burning API calls on every page load.
-
-### Edit the knowledge base
-
-The markdown files at the repo root are the system's brain. Edit them directly:
-
-- Change your voice? Update `core/VOICE.md`
-- Add a new agent skill? Drop a `SKILL.md` in `skills/{category}/{agent-name}/`
-- Refine a workflow? Edit the relevant file in `playbooks/`
-
-Every agent reads these files before running. The system gets better as the knowledge base gets better.
-
-### Validate the repo structure
-
-```bash
-cd apps/api
-source venv/bin/activate
-python scripts/validate_repo_structure.py
-python scripts/lint_skill_files.py
-```
+Both modes exist for different reasons and both remain. Choose chat for interactive work; choose pipeline for batch production.
 
 ---
 
-## Architecture
+## The markdown engine
 
-```
-forgeos/
-├── core/                        # Voice, style, claims, brand standards
-├── context/                     # 8-layer context system
-│   ├── 00_orchestration/        # Context routing instructions
-│   ├── 01_philosophy/           # Developer marketing principles
-│   ├── 02_narrative/            # Messaging frameworks
-│   ├── 03_strategy/             # Content strategy
-│   ├── 04_execution/            # Campaign blueprints
-│   ├── 05_patterns/             # Proven content patterns
-│   ├── 06_influence/            # Analyst relations
-│   └── 07_research/             # Market research playbooks
-├── skills/                      # Agent skill definitions (19 agents)
-│   ├── editorial/               # editorial-director, copy-chief, content-ops-manager
-│   ├── foundation/              # ai-researcher, dev-copywriter, dev-reviewer
-│   ├── specialization/          # seo-strategist, social-editor, technical-fact-checker, and more
-│   └── quality/                 # claims-risk-reviewer, final-publish-reviewer
-├── playbooks/                   # Sequenced production workflows
-├── rubrics/                     # Quality scoring rubrics
-├── briefs/                      # Intake brief templates
-├── prompts/                     # Reusable prompt templates
-├── examples/                    # Reference quality tiers
-└── apps/
-    ├── api/                     # FastAPI backend
-    │   ├── main.py              # App entry point, router registration
-    │   ├── runner.py            # 11-agent chain executor
-    │   ├── cache.py             # In-memory TTL cache (no Redis)
-    │   ├── database.py          # SQLite via SQLModel
-    │   ├── models.py            # AgentSession, Project, ChatSession, and more
-    │   └── routers/             # sessions, briefing, chat, projects, files, intelligence
-    └── web/                     # Next.js 14 frontend
-        └── src/
-            ├── app/             # Pages: dashboard, sessions, projects, settings
-            ├── components/      # UI, layout, dashboard, sessions components
-            └── lib/             # API client, quote utility
-```
+The `core/`, `context/`, `skills/`, `playbooks/`, `rubrics/` directories at repo root are the system's **canonical source of truth**. Every agent reads from these before running. You own and control these files.
 
-**No cloud database. No auth service. No Redis. No Vercel.** SQLite on disk. Static frontend. One API key.
+### core/
+Load-bearing doctrine. You edit these from the Settings page (explicit save required):
+- `VOICE.md` — your brand voice, tone, audience POV
+- `STYLE_GUIDE.md` — formatting, conventions, visual style
+- `CLAIMS_POLICY.md` — what claims are safe, what needs evidence, what's off-limits
+
+### context/
+Narrative, strategy, and execution layers. Composable per brief. Thin by design in v1 (Aaron's intention — needs expansion later):
+- `00_orchestration/` — context routing instructions for agents
+- `01_philosophy/` — marketing principles (developer relations, positioning)
+- `02_narrative/` — messaging frameworks, competitive POV, campaign messaging
+- `03_strategy/` — content strategy, audience insights
+- `04_execution/` — campaign blueprints, launch playbooks
+- `05_patterns/` — proven content patterns
+- `06_influence/` — analyst relations strategy
+- `07_research/` — market research playbooks, intelligence scoring prompt
+
+**Which context layers are thin?** `02_narrative/` (messaging frameworks, competitive POV, campaign messaging), `03_strategy/` (content strategy), and `04_execution/` (launch frameworks) are placeholder-scale. PMM-led expansion here will unlock better output. Document in Settings which files need growth and how to expand them.
+
+### skills/
+11 agent definitions, organized by category. Each has a `SKILL.md` that defines the agent's role, constraints, and process. Read them to understand what each agent does. Agents load their own SKILL.md before running — change the file, change the agent.
+
+### playbooks/
+Agent orchestration specs. Define the order of agents, the context layers to use, and the branching logic for different content types. Composable with named context layers.
+
+### rubrics/
+Scoring guidance. Used for draft quality assessment and content filtering. Editable from Settings.
 
 ---
 
-## What's next
+## Scrape schedule
 
-ForgeOS is early. The foundation is solid — the markdown engine, the agent chain, the briefing feed, the session workspace. But there's a lot of ground left to cover.
+The system runs a scraper twice daily (configurable via cron). It reads from:
+- Hacker News (Algolia API)
+- GitHub (topics RSS)
+- ArXiv (RSS)
+- Reddit (JSON API)
+- Generic RSS feeds (configured in Settings)
 
-**Near-term**
-- `output: 'export'` static site mode so the frontend deploys to GitHub Pages without a Node server (blocked by dynamic session routes — needs a routing fix)
-- Multi-agent parallelism for research tasks
-- Brief generation UI — fill out a form, get a structured brief, run the chain
-- Agent output streaming directly into the document editor (live updates vs. waiting for completion)
-
-**Medium-term**
-- Calendar and pipeline view — see what's scheduled, what's in flight, what's done
-- Slack integration — push finished content to channels, get briefings via DM
-- Twitter/X scraper — the interface exists, the implementation is stubbed
-- Broad web search integration — search as a research step inside agent runs
-- Rubric-based quality scoring — auto-score drafts against editorial rubrics before surfacing
-
-**Longer-term**
-- Multi-user support with role-based access
-- Gmail and HubSpot integrations for distribution tracking
-- Custom agent builder — define new agents in the UI without touching markdown
-- Eval harness — run sample briefs against expected outputs, measure quality drift over time
+Each item gets a score (≥7 for inclusion in briefing). The synthesis pass (why_relevant, content_angle) runs once per scrape, not on every dashboard load. The Briefing Book shows curated items from the last 24 hours; the Intelligence page shows the full scored feed.
 
 ---
 
-## Looking for contributors
+## Empty context layers (intentional for v1)
 
-This project is open source and actively evolving. I'm one person building this between other work, and there's more to do than I can do alone.
+The narrative layer (`context/02_narrative/`) contains three thin placeholder files:
+- `messaging-framework.md` — needs ~10x expansion
+- `competitive-pov.md` — placeholder
+- `campaign-messaging.md` — placeholder
 
-If any of this sounds interesting to work on, I'd love to hear from you:
+Similarly, `context/03_strategy/ar-strategy.md` and `context/04_execution/` are thin. These are not bugs — Aaron's intention for v1 is to ship with a strong voice/style/claims foundation and thin narrative/strategy layers. You'll expand them as your team uses the system.
 
-- **Frontend engineers** — the UI is functional but there's a lot of room to make it excellent
-- **Python developers** — the agent runner, scraping pipeline, and API all have meaningful improvements on the roadmap
-- **AI/ML engineers** — evals, scoring, parallelism, and smarter context loading are all open problems
-- **Technical writers** — the knowledge base is the product; good writers who understand AI tooling are as valuable as engineers here
-- **Marketers who code** — this tool is built for people like you, and your feedback shapes the roadmap
+**How to expand them:**
+1. Open Settings → Engine tree
+2. Navigate to the relevant context file
+3. Edit it directly (markdown editor, explicit save required)
+4. The next pipeline run or brief generation will use the new content
 
-Open an issue, start a discussion, or reach out directly. The best contributions usually start with a conversation.
+---
+
+## Contributing
+
+### Adding a skill
+
+1. Create `skills/{category}/{agent-name}/SKILL.md`
+2. Define role, constraints, input/output shape
+3. Reference it in a playbook or use it as a standalone agent in chat
+
+### Adding a context layer
+
+1. Create `context/{layer_number}_{name}/{file}.md`
+2. Reference it by path in the orchestrator or playbook
+3. Use it to compose briefs or pipeline runs
+
+### Adding a playbook
+
+1. Create `playbooks/{content_type}.md`
+2. Define the agent order, context layers, branching logic
+3. Reference it in chat toggles or pipeline runs
+
+### Style guide
+
+Read `core/VOICE.md`. All contributions should match the voice and style defined there.
 
 ---
 
@@ -259,11 +160,13 @@ Open an issue, start a discussion, or reach out directly. The best contributions
 |-------|-----------|
 | Backend | FastAPI + Python 3.9+ |
 | Database | SQLite (via SQLModel) |
-| LLM | Anthropic Claude (claude-sonnet-4-5) |
+| LLM | Anthropic Claude (Opus for generation, Haiku for scoring) |
 | Frontend | Next.js 14 + TypeScript |
 | Styling | Tailwind CSS |
-| Data fetching | SWR |
+| Data fetching | React Query |
 | Observability | Arize AX (OpenTelemetry) |
+
+**No cloud database. No auth service. No Redis.** SQLite on disk. One API key. One person can run it.
 
 ---
 
