@@ -30,6 +30,14 @@ class Settings(BaseSettings):
     # Token encryption key (Fernet symmetric key)
     # Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
     ENCRYPTION_KEY: str = ""
+    
+    # Stripe keys (M2 Billing & Metering)
+    STRIPE_PUBLIC_KEY: str = ""
+    STRIPE_SECRET_KEY: str = ""
+    STRIPE_WEBHOOK_SECRET: str = ""
+    
+    # LLM key encryption (M2)
+    LLM_KEY_ENCRYPTION_SECRET: str = ""
 
     class Config:
         env_file = ".env"
@@ -39,5 +47,10 @@ class Settings(BaseSettings):
         # If ENCRYPTION_KEY not provided, generate one (should warn in production)
         if not self.ENCRYPTION_KEY:
             self.ENCRYPTION_KEY = os.environ.get("ENCRYPTION_KEY", Fernet.generate_key().decode())
+        
+        # If LLM_KEY_ENCRYPTION_SECRET not provided, generate one
+        if not self.LLM_KEY_ENCRYPTION_SECRET:
+            import base64
+            self.LLM_KEY_ENCRYPTION_SECRET = base64.b64encode(os.urandom(32)).decode()
 
 settings = Settings()

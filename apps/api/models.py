@@ -318,3 +318,54 @@ class SearchInsight(SQLModel, table=True):
         Index('idx_search_insight_generated', 'user_id', 'generated_at'),
         Index('idx_search_insight_topic', 'user_id', 'topic'),
     )
+
+class RuntimeCredential(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    organization_id: str = Field(foreign_key="organization.id")
+    user_id: str
+    runtime: str  # anthropic|openai|copilot
+    encrypted_api_key: str
+    key_hash: str
+    is_valid: bool = Field(default=False)
+    last_validated_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class UsageEvent(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    organization_id: str = Field(foreign_key="organization.id")
+    user_id: str
+    event_type: str  # chat_message|pipeline_run|briefing_synthesis
+    tokens_input: int = Field(default=0)
+    tokens_output: int = Field(default=0)
+    runtime: str  # anthropic|openai|copilot
+    cost_usd_estimate: Optional[float] = None
+    occurred_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    __table_args__ = (
+        Index('idx_usage_org_time', 'organization_id', 'occurred_at'),
+        Index('idx_usage_runtime_time', 'runtime', 'occurred_at'),
+    )
+
+class FeatureFlag(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    organization_id: str = Field(foreign_key="organization.id")
+    flag_name: str
+    enabled: bool = Field(default=False)
+    expires_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+class AuditEvent(SQLModel, table=True):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
+    organization_id: str = Field(foreign_key="organization.id")
+    user_id: str
+    action: str  # credential_added|credential_removed|subscription_created|subscription_canceled|data_exported|data_deleted
+    resource_type: str  # runtime_credential|subscription|user_data
+    resource_id: Optional[str] = None
+    details_json: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    __table_args__ = (
+        Index('idx_audit_org_time', 'organization_id', 'created_at'),
+        Index('idx_audit_action', 'action', 'created_at'),
+    )
+
