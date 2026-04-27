@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import uuid
 from contextvars import ContextVar
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from sqlalchemy import event, inspect
@@ -128,7 +128,7 @@ def _collect_audit_entries(session: OrmSession, flush_context, instances) -> Non
                 "new_values_json": json.dumps(new_values) if new_values is not None else None,
                 "request_method": ctx["request_method"],
                 "request_path": ctx["request_path"],
-                "created_at": datetime.utcnow(),
+                "created_at": datetime.now(timezone.utc),
             }
         )
 

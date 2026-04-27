@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 from typing import Dict, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 class DoctrineHealthService:
@@ -68,7 +68,7 @@ class DoctrineHealthService:
             "cached": bool
         }
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         # Use cache if available and not forced refresh
         if self.cache and self.cache_time and not force_refresh:

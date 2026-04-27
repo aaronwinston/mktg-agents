@@ -5,7 +5,7 @@ from models import ScrapeItem, SearchInsight, KeywordCluster
 from middleware.auth import get_current_user, AuthContext
 from services.scraping import run_all_scrapers, DEFAULT_SUBREDDITS, GITHUB_TOPICS, ARXIV_FEEDS, DEFAULT_RSS_FEEDS
 from services.scoring import score_items_batch, synthesize_items_batch
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from pydantic import BaseModel
 from middleware.rate_limit import limiter, global_rate_limit_key
@@ -74,7 +74,9 @@ def dismiss_item(
             )
         ).first()
         if item:
-            item.dismissed_at = datetime.utcnow()
+            if item.user_id != auth.user_id:
+                raise HTTPException(status_code=403, detail="Not authorized to modify this item")
+            item.dismissed_at = datetime.now(timezone.utc)
             session.add(item)
             session.commit()
         return {"ok": True}
@@ -93,7 +95,9 @@ def use_as_context(
             )
         ).first()
         if item:
-            item.surfaced_to_user_at = datetime.utcnow()
+            if item.user_id != auth.user_id:
+                raise HTTPException(status_code=403, detail="Not authorized to modify this item")
+            item.surfaced_to_user_at = datetime.now(timezone.utc)
             session.add(item)
             session.commit()
         return {"ok": True, "item_id": item_id}
@@ -238,7 +242,7 @@ def update_keyword_cluster(
             cluster.active = data.active
         if data.keyword is not None:
             cluster.keyword = data.keyword
-        cluster.updated_at = datetime.utcnow()
+        cluster.updated_at = datetime.now(timezone.utc)
         
         session.add(cluster)
         session.commit()

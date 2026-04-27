@@ -1,6 +1,6 @@
 """Feature entitlements based on organization plan."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import NamedTuple
 from models import Organization
 
@@ -46,7 +46,7 @@ class EntitlementsService:
     @staticmethod
     def get_plan(org: Organization) -> str:
         """Determine effective plan (including trial)."""
-        if org.trial_ends_at and datetime.utcnow() < org.trial_ends_at:
+        if org.trial_ends_at and datetime.now(timezone.utc) < org.trial_ends_at:
             # Trial users get Pro features
             return 'pro'
         return org.plan or 'free'

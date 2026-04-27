@@ -2,7 +2,7 @@
 
 import json
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from anthropic import Anthropic
@@ -30,7 +30,7 @@ async def cross_reference_lm_pass(
     try:
         with Session(engine) as session:
             org_id = organization_id or _default_org_id(session)
-            cutoff_time = datetime.utcnow() - timedelta(hours=24)
+            cutoff_time = datetime.now(timezone.utc) - timedelta(hours=24)
             top_items = session.exec(
                 select(ScrapeItem)
                 .where(

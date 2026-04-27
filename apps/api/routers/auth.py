@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, status, Response, Request
 from pydantic import BaseModel, EmailStr
 import jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from config import settings
 from middleware.rate_limit import limiter
 
@@ -28,9 +28,9 @@ class AuthResponse(BaseModel):
 def create_access_token(data: dict, expires_delta: timedelta = None):
     to_encode = data.copy()
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -41,7 +41,7 @@ async def signup(request: Request, data: SignUpRequest, response: Response):
     """Sign up a new user and return auth token in httpOnly cookie."""
 
     # Generate IDs (in production, this would create actual user records)
-    org_id = "org_" + data.email.split("@")[0] + "_" + datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    org_id = "org_" + data.email.split("@")[0] + "_" + datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
     user_id = data.email.split("@")[0]
 
     # Create JWT payload
@@ -90,7 +90,7 @@ async def signin(request: Request, data: SignInRequest, response: Response):
 
     # In production, verify credentials against database
     # For now, accept any credentials and create a mock session
-    org_id = "org_" + data.email.split("@")[0] + "_" + datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    org_id = "org_" + data.email.split("@")[0] + "_" + datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
     user_id = data.email.split("@")[0]
 
     # Create JWT payload

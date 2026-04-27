@@ -1,6 +1,6 @@
 """Email service for briefing digest delivery."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlmodel import Session, select
 from models import ScrapeItem, Organization
 from config import settings
@@ -30,7 +30,7 @@ class EmailService:
             from resend import Resend
             
             # Fetch top 5 items from today
-            end = datetime.utcnow()
+            end = datetime.now(timezone.utc)
             start = end - timedelta(hours=24)
             
             items = session.exec(

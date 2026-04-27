@@ -5,7 +5,7 @@ from database import get_session
 from models import ScrapeItem, BriefingFeedback
 from middleware.auth import get_current_user, AuthContext
 from sqlmodel import Session, select
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from pydantic import BaseModel
 
@@ -54,10 +54,10 @@ def _query_items(db: Session, org_id: str, date: Optional[str] = None):
             end = start + timedelta(days=1)
         except ValueError:
             # Fallback to last 24h on bad date
-            end = datetime.utcnow()
+            end = datetime.now(timezone.utc)
             start = end - timedelta(hours=24)
     else:
-        end = datetime.utcnow()
+        end = datetime.now(timezone.utc)
         start = end - timedelta(hours=24)
 
     return db.exec(

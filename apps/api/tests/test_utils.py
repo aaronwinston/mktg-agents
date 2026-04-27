@@ -1,7 +1,7 @@
 """Unit tests for helper utilities."""
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from utils.helpers import (
     generate_id,
     generate_org_id,
@@ -225,12 +225,12 @@ class TestIsExpired:
     
     @pytest.mark.unit
     def test_not_expired(self):
-        created_at = datetime.utcnow() - timedelta(minutes=1)
+        created_at = datetime.now(timezone.utc) - timedelta(minutes=1)
         assert is_expired(created_at, 3600) is False
     
     @pytest.mark.unit
     def test_expired(self):
-        created_at = datetime.utcnow() - timedelta(hours=2)
+        created_at = datetime.now(timezone.utc) - timedelta(hours=2)
         assert is_expired(created_at, 3600) is True
     
     @pytest.mark.unit

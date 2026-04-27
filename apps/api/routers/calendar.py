@@ -96,7 +96,7 @@ def _event_to_dict(event: CalendarEvent) -> dict:
 
 
 def _now_utc() -> datetime:
-    return datetime.utcnow()
+    return datetime.now(timezone.utc)
 
 
 # ---------------------------------------------------------------------------

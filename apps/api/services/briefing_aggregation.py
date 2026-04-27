@@ -1,6 +1,6 @@
 """Weekly briefing feedback aggregation and scoring prompt calibration."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlmodel import Session, select
 from models import BriefingFeedback
 from anthropic import Anthropic
@@ -17,7 +17,7 @@ class BriefingAggregationService:
         Aggregate feedback from the last N days and generate a calibration summary.
         Returns: {"summary": "...", "thumbs_up": N, "thumbs_down": M}
         """
-        cutoff = datetime.utcnow() - timedelta(days=days_back)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days_back)
         
         # Query feedback from last N days
         feedback_records = self.session.exec(
@@ -102,7 +102,7 @@ Return ONLY the summary text, no preamble."""
                 return False
             
             # Create calibration section
-            now = datetime.utcnow().strftime("%Y-%m-%d")
+            now = datetime.now(timezone.utc).strftime("%Y-%m-%d")
             calibration_section = f"""## Weekly Calibration (Updated {now})
 
 {calibration_summary}

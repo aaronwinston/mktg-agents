@@ -1,5 +1,5 @@
 from typing import AsyncGenerator, Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from config import settings
 from services.file_engine import (
     load_skill, load_playbook, load_core_doc, load_context_layer,
@@ -209,7 +209,7 @@ async def execute_playbook(
         agent_chain = ["editorial-director", "ai-researcher", "dev-copywriter", "dev-reviewer"]
         
         for agent_name in agent_chain:
-            step_started_at = datetime.utcnow()
+            step_started_at = datetime.now(timezone.utc)
             
             agent_prompt = f"""## Content Brief
 
@@ -243,7 +243,7 @@ Return the improved version."""
                     input_text=agent_prompt,
                     output_text=agent_output,
                     started_at=step_started_at,
-                    completed_at=datetime.utcnow(),
+                    completed_at=datetime.now(timezone.utc),
                     tokens_used=None
                 )
                 db_session.add(step)

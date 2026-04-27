@@ -7,7 +7,7 @@ from models import DoctrineVersion, Organization
 from middleware.auth import get_current_user, AuthContext
 from pydantic import BaseModel
 from typing import Optional, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import hashlib
 
 router = APIRouter(prefix="/api/doctrine", tags=["doctrine"])
@@ -235,7 +235,7 @@ async def cleanup_old_versions(
         raise HTTPException(status_code=404, detail="Organization not found")
     
     # Delete versions older than 90 days
-    cutoff = datetime.utcnow() - timedelta(days=90)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=90)
     old_versions = session.exec(
         select(DoctrineVersion).where(
             (DoctrineVersion.organization_id == auth.org_id) &

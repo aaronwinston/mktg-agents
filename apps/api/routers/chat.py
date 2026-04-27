@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, Query
 from fastapi.responses import StreamingResponse
 from sqlmodel import Session, select
@@ -188,7 +188,9 @@ async def chat_stream(
 
             yield f"data: {json.dumps({'done': True, 'session_id': chat_session_id})}\n\n"
         except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            import logging
+            logging.error(f"Stream error: {e}", exc_info=True)
+            yield f"data: {json.dumps({'error': 'An error occurred during streaming'})}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
@@ -272,7 +274,7 @@ def update_brief_toggles(
     
     toggles = req.dict()
     brief.toggles_json = json.dumps(toggles)
-    brief.updated_at = datetime.utcnow()
+    brief.updated_at = datetime.now(timezone.utc)
     session.add(brief)
     session.commit()
     session.refresh(brief)
@@ -421,7 +423,7 @@ def update_brief(
     if req.toggles is not None:
         brief.toggles_json = json.dumps(req.toggles)
     
-    brief.updated_at = datetime.utcnow()
+    brief.updated_at = datetime.now(timezone.utc)
     session.add(brief)
     session.commit()
     session.refresh(brief)
@@ -523,7 +525,9 @@ Do NOT output anything else after the JSON. The JSON is your final response."""
                 # If we can't parse, assume incomplete
                 yield f"data: {json.dumps({'done': False, 'state': 'incomplete'})}\n\n"
         except Exception as e:
-            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            import logging
+            logging.error(f"Brief stream error: {e}", exc_info=True)
+            yield f"data: {json.dumps({'error': 'An error occurred during brief generation'})}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
@@ -633,4 +637,6 @@ async def brief_yolo(
     except Exception as e:
         # Rollback on any error
         session.rollback()
-        raise HTTPException(status_code=400, detail=f"YOLO creation failed: {str(e)}")
+        import logging
+        logging.error(f"YOLO creation failed: {e}", exc_info=True)
+        raise HTTPException(status_code=400, detail="Failed to create deliverable. Please try again.")

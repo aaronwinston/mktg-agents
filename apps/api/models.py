@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 import uuid
 
@@ -317,7 +317,7 @@ class CalendarIntegration(SQLModel, table=True):
     def is_token_expired(self) -> bool:
         if not self.expires_at:
             return True
-        return datetime.utcnow() >= self.expires_at
+        return datetime.now(timezone.utc) >= self.expires_at
 
     def refresh_if_needed(self):
         from services.oauth import refresh_oauth_token_if_needed
@@ -333,7 +333,7 @@ class CalendarIntegration(SQLModel, table=True):
             )
             self.access_token = new_access
             self.refresh_token = new_refresh
-            self.updated_at = datetime.utcnow()
+            self.updated_at = datetime.now(timezone.utc)
             return True
         except Exception as e:
             import logging

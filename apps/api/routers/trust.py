@@ -9,7 +9,7 @@ from middleware.rate_limit import limiter, global_rate_limit_key
 from config import settings
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 
 router = APIRouter(prefix="/api/trust", tags=["trust"])
@@ -139,7 +139,7 @@ async def export_user_data(
         raise HTTPException(status_code=404, detail="Organization not found")
     
     export = {
-        "export_date": datetime.utcnow().isoformat(),
+        "export_date": datetime.now(timezone.utc).isoformat(),
         "organization": {
             "id": org.id,
             "name": org.name,
@@ -208,7 +208,7 @@ async def schedule_account_deletion(
         raise HTTPException(status_code=404, detail="Organization not found")
     
     # Set deletion scheduled flag
-    deletion_scheduled_at = datetime.utcnow()
+    deletion_scheduled_at = datetime.now(timezone.utc)
     
     import json as json_lib
     metadata = {}

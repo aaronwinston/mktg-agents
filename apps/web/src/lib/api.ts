@@ -1,4 +1,5 @@
 import { validateConfig } from './config';
+import { getHeadersWithCSRF } from './csrf';
 
 // Validate configuration on module load
 if (typeof window !== 'undefined') {
@@ -213,7 +214,7 @@ export function streamChat(
   
   fetch(`${API_BASE}/api/chat/stream`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHeadersWithCSRF({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({
       message,
       session_id: sessionId,
