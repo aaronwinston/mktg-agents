@@ -37,6 +37,9 @@ async def startup():
     from services.scraping import run_all_scrapers
     from services.scoring import score_items_batch
     from services.calendar import poll_from_google
+    from services.trends import poll_trends, get_configured_keywords
+    from services.gsc import pull_gsc_data
+    from services.cross_reference import cross_reference_lm_pass
     from models import ScrapeItem
     from sqlmodel import Session, select
     from database import engine
@@ -67,9 +70,34 @@ async def startup():
         except Exception as e:
             logger.error(f"Calendar poll failed: {str(e)}")
 
+    async def scheduled_trends_poll():
+        try:
+            keywords = await get_configured_keywords()
+            result = await poll_trends(keywords=keywords)
+            logger.info(f"Trends poll: {len(result)} keywords processed")
+        except Exception as e:
+            logger.error(f"Trends poll failed: {str(e)}")
+
+    async def scheduled_gsc_pull():
+        try:
+            result = await pull_gsc_data()
+            logger.info(f"GSC pull: {result.get('status')} - {result.get('rows_fetched', 0)} rows")
+        except Exception as e:
+            logger.error(f"GSC pull failed: {str(e)}")
+
+    async def scheduled_cross_reference():
+        try:
+            result = await cross_reference_lm_pass()
+            logger.info(f"Cross-reference pass: {result.get('insights_created', 0)} insights created")
+        except Exception as e:
+            logger.error(f"Cross-reference pass failed: {str(e)}")
+
     scheduler.add_job(scheduled_scrape, 'cron', hour=8, minute=0)
     scheduler.add_job(scheduled_scrape, 'cron', hour=18, minute=0)
     scheduler.add_job(scheduled_calendar_poll, 'interval', minutes=5)
+    scheduler.add_job(scheduled_trends_poll, 'cron', hour=9, minute=0)  # Daily at 9 AM
+    scheduler.add_job(scheduled_gsc_pull, 'cron', hour=9, minute=15)  # 15 min after trends
+    scheduler.add_job(scheduled_cross_reference, 'cron', hour=9, minute=30)  # 30 min after trends
     scheduler.start()
 
 @app.on_event("shutdown")
