@@ -35,9 +35,13 @@ async def startup():
 
     from services.scraping import run_all_scrapers
     from services.scoring import score_items_batch
+    from services.calendar import poll_from_google
     from models import ScrapeItem
     from sqlmodel import Session, select
     from database import engine
+    import logging
+
+    logger = logging.getLogger(__name__)
 
     async def scheduled_scrape():
         items = await run_all_scrapers()
@@ -52,8 +56,19 @@ async def startup():
                     session.add(item)
             session.commit()
 
+    def scheduled_calendar_poll():
+        try:
+            result = poll_from_google()
+            if result.get("status") == "success":
+                logger.info(f"Calendar poll: {result.get('updated_count')} updated, {result.get('archived_count')} archived")
+            else:
+                logger.debug(f"Calendar poll: {result.get('status')}")
+        except Exception as e:
+            logger.error(f"Calendar poll failed: {str(e)}")
+
     scheduler.add_job(scheduled_scrape, 'cron', hour=8, minute=0)
     scheduler.add_job(scheduled_scrape, 'cron', hour=18, minute=0)
+    scheduler.add_job(scheduled_calendar_poll, 'interval', minutes=5)
     scheduler.start()
 
 @app.on_event("shutdown")
