@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from database import create_db_and_tables
-from routers import projects, chat, intelligence, settings, files, sessions, briefing, integrations, calendar
+from routers import projects, chat, intelligence, settings, files, sessions, briefing, integrations, calendar, search
 
 app = FastAPI(title="ForgeOS API", version="1.0.0")
 
@@ -27,6 +27,7 @@ app.include_router(sessions.router)
 app.include_router(briefing.router)
 app.include_router(integrations.router)
 app.include_router(calendar.router)
+app.include_router(search.router)
 
 scheduler = AsyncIOScheduler()
 
