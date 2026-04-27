@@ -93,6 +93,7 @@ class DeliverableCreate(BaseModel):
     title: str
     status: str = "draft"
     body_md: Optional[str] = None
+    metadata_json: Optional[str] = None
 
 class DeliverableUpdate(BaseModel):
     title: Optional[str] = None

@@ -6,6 +6,15 @@ from services.scraping import run_all_scrapers, DEFAULT_SUBREDDITS, GITHUB_TOPIC
 from services.scoring import score_items_batch, synthesize_items_batch
 from datetime import datetime
 from typing import Optional
+from pydantic import BaseModel
+
+class KeywordClusterInput(BaseModel):
+    keyword: str
+    region: str = "US"
+
+class KeywordClusterUpdate(BaseModel):
+    active: Optional[bool] = None
+    keyword: Optional[str] = None
 
 router = APIRouter(prefix="/api/intelligence", tags=["intelligence"])
 
@@ -107,33 +116,33 @@ def get_keyword_clusters(session: Session = Depends(get_session)):
     return clusters
 
 @router.post("/search/keywords")
-def add_keyword_cluster(keyword: str, region: str = "US", session: Session = Depends(get_session)):
+def add_keyword_cluster(data: KeywordClusterInput, session: Session = Depends(get_session)):
     """Add a new keyword cluster."""
     existing = session.exec(
         select(KeywordCluster)
-        .where(KeywordCluster.keyword == keyword)
-        .where(KeywordCluster.region == region)
+        .where(KeywordCluster.keyword == data.keyword)
+        .where(KeywordCluster.region == data.region)
     ).first()
     if existing:
-        return {"error": f"Keyword '{keyword}' already exists for region {region}"}
+        return {"error": f"Keyword '{data.keyword}' already exists for region {data.region}"}
     
-    cluster = KeywordCluster(keyword=keyword, region=region, active=True)
+    cluster = KeywordCluster(keyword=data.keyword, region=data.region, active=True)
     session.add(cluster)
     session.commit()
     session.refresh(cluster)
     return cluster
 
 @router.put("/search/keywords/{cluster_id}")
-def update_keyword_cluster(cluster_id: int, active: Optional[bool] = None, keyword: Optional[str] = None, session: Session = Depends(get_session)):
+def update_keyword_cluster(cluster_id: int, data: KeywordClusterUpdate, session: Session = Depends(get_session)):
     """Update a keyword cluster."""
     cluster = session.get(KeywordCluster, cluster_id)
     if not cluster:
         return {"error": f"Cluster {cluster_id} not found"}
     
-    if active is not None:
-        cluster.active = active
-    if keyword is not None:
-        cluster.keyword = keyword
+    if data.active is not None:
+        cluster.active = data.active
+    if data.keyword is not None:
+        cluster.keyword = data.keyword
     cluster.updated_at = datetime.utcnow()
     
     session.add(cluster)

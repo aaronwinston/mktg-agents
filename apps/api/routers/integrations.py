@@ -30,8 +30,9 @@ GOOGLE_SCOPES = [
 ]
 
 CALENDAR_NAME = "ForgeOS — Content"
-STATE_CACHE_DIR = Path("/tmp/forgeos_oauth_states")  # Store OAuth states temporarily
-STATE_CACHE_DIR.mkdir(exist_ok=True)
+# Store OAuth states in user home directory (not /tmp for security)
+STATE_CACHE_DIR = Path.home() / ".forgeos" / "oauth_states"
+STATE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def store_oauth_state(state: str, ttl_seconds: int = 600):

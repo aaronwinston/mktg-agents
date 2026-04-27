@@ -22,7 +22,12 @@ export default function OpportunitiesSection() {
       const response = await fetch('http://localhost:8000/api/intelligence/search/insights');
       if (!response.ok) throw new Error('Failed to load insights');
       const data = await response.json();
-      setInsights(data);
+      // Filter for opportunity gaps: rising trends + no rank or position > 10
+      const opportunities = data.filter((insight: SearchInsight) =>
+        insight.trends_momentum === 'rising' &&
+        (!insight.our_gsc_position || insight.our_gsc_position > 10)
+      );
+      setInsights(opportunities);
     } catch (err) {
       setError('Failed to load opportunity gaps. Try refreshing.');
       console.error('Load error:', err);

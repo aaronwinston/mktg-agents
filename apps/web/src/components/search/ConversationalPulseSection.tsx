@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import StartInsightModal from './StartInsightModal';
+import StartSocialItemModal from './StartSocialItemModal';
 import type { ScrapeItem } from '@/lib/types';
 
 export default function ConversationalPulseSection() {
@@ -116,13 +116,13 @@ export default function ConversationalPulseSection() {
       )}
 
       {selectedItem && (
-        <StartInsightModal
+        <StartSocialItemModal
           isOpen={showModal}
           onClose={() => {
             setShowModal(false);
             setSelectedItem(null);
           }}
-          insight={selectedItem as any}
+          item={selectedItem}
         />
       )}
     </div>
