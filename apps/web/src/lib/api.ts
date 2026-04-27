@@ -31,7 +31,7 @@ export interface Story {
 export interface BriefingResponse {
   stories: Story[];
   refreshed_at: number | null;
-  error?: string;
+  error?: 'API_UNREACHABLE' | 'API_HTTP_ERROR' | 'API_PARSE_ERROR';
 }
 
 export interface Project {
@@ -55,7 +55,9 @@ export interface Deliverable {
 }
 
 export interface ApiError {
-  error: 'API_UNAVAILABLE';
+  error: 'API_UNREACHABLE' | 'API_HTTP_ERROR' | 'API_PARSE_ERROR';
+  status?: number;
+  details?: string;
 }
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T | ApiError> {
@@ -65,12 +67,21 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T | Api
       ...options,
     });
     if (!res.ok) {
-      console.error(`API error ${res.status} for ${path}`);
-      return { error: 'API_UNAVAILABLE' };
+      const details = await res.text().catch(() => undefined);
+      console.error(`API error ${res.status} for ${path}:`, details);
+      return { 
+        error: 'API_HTTP_ERROR', 
+        status: res.status, 
+        details: details || undefined 
+      };
     }
     return res.json();
-  } catch {
-    return { error: 'API_UNAVAILABLE' };
+  } catch (err) {
+    console.error(`API unreachable for ${path}:`, err);
+    return { 
+      error: 'API_UNREACHABLE', 
+      details: err instanceof Error ? err.message : 'Unknown error' 
+    };
   }
 }
 
@@ -119,19 +130,19 @@ export async function runSession(id: number): Promise<void> {
 
 export async function getBriefing(): Promise<BriefingResponse> {
   const result = await apiFetch<BriefingResponse>('/api/briefing');
-  if (isApiError(result)) return { stories: [], refreshed_at: null, error: 'API_UNAVAILABLE' };
+  if (isApiError(result)) return { stories: [], refreshed_at: null, error: result.error };
   return result;
 }
 
 export async function getBriefingByDate(date: string): Promise<BriefingResponse> {
   const result = await apiFetch<BriefingResponse>(`/api/briefing?date=${encodeURIComponent(date)}`);
-  if (isApiError(result)) return { stories: [], refreshed_at: null, error: 'API_UNAVAILABLE' };
+  if (isApiError(result)) return { stories: [], refreshed_at: null, error: result.error };
   return result;
 }
 
 export async function refreshBriefing(): Promise<BriefingResponse> {
   const result = await apiFetch<BriefingResponse>('/api/briefing/refresh', { method: 'POST' });
-  if (isApiError(result)) return { stories: [], refreshed_at: null, error: 'API_UNAVAILABLE' };
+  if (isApiError(result)) return { stories: [], refreshed_at: null, error: result.error };
   return result;
 }
 

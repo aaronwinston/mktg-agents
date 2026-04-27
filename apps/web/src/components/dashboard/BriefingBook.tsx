@@ -39,14 +39,21 @@ export function BriefingBook() {
         ? await getBriefingByDate(getYesterdayDate())
         : await getBriefing();
       setLoading(false);
-      if (result.error === 'API_UNAVAILABLE') {
-        const health = await checkHealth();
-        if (!health.ok) {
+      
+      if (result.error) {
+        if (result.error === 'API_UNREACHABLE') {
           setOffline(true);
-          setOfflineMessage('Unable to connect to the briefing API. Check that the local API is running on port 8000.');
+          setOfflineMessage('Unable to connect to the API. Check that it\'s running on port 8000.');
         } else {
-          setOffline(false);
-          setStories([]);
+          // API_HTTP_ERROR or other
+          const health = await checkHealth();
+          if (!health.ok) {
+            setOffline(true);
+            setOfflineMessage('API is unreachable. Check that the server is running.');
+          } else {
+            setOffline(true);
+            setOfflineMessage('API error occurred. Try again in a moment.');
+          }
         }
       } else {
         setOffline(false);

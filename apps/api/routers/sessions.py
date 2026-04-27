@@ -188,6 +188,15 @@ async def run_session(session_id: int, session: Session = Depends(get_session)):
                 sess.updated_at = datetime.utcnow()
                 db.add(sess)
                 db.commit()
+                
+                # Write final output to deliverable (PRD 4.4)
+                if sess.deliverable_id:
+                    deliverable = db.get(Deliverable, sess.deliverable_id)
+                    if deliverable:
+                        deliverable.body_md = final_output
+                        deliverable.updated_at = datetime.utcnow()
+                        db.add(deliverable)
+                        db.commit()
         
         await queue.put({"type": "done", "output": final_output})
         del _session_queues[session_id]
