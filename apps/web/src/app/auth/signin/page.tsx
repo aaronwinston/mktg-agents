@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { getCSRFToken, getHeadersWithCSRF } from '@/lib/csrf';
 
 export default function SignIn() {
   const router = useRouter();
@@ -9,6 +10,12 @@ export default function SignIn() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [csrfToken, setCSRFToken] = useState('');
+
+  // Initialize CSRF token on component mount
+  useEffect(() => {
+    setCSRFToken(getCSRFToken());
+  }, []);
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
@@ -19,9 +26,9 @@ export default function SignIn() {
       const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const response = await fetch(`${API_BASE}/api/auth/signin`, {
         method: 'POST',
-        headers: {
+        headers: getHeadersWithCSRF({
           'Content-Type': 'application/json',
-        },
+        }),
         credentials: 'include', // Important: allows cookies to be set
         body: JSON.stringify({
           email,
@@ -88,7 +95,7 @@ export default function SignIn() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !csrfToken}
               className="w-full py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-slate-600 text-white font-medium rounded transition"
             >
               {loading ? 'Signing in...' : 'Sign In'}

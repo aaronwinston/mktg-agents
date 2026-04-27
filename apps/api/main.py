@@ -15,6 +15,7 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from database import create_db_and_tables
 from middleware.request_logging import RequestLoggingMiddleware
+from middleware.csrf import CSRFMiddleware
 from routers import (
     projects,
     chat,
@@ -48,6 +49,9 @@ setup_rate_limiting(app)
 
 # Request/response logging (method, path, status, latency, sizes, auth context)
 app.add_middleware(RequestLoggingMiddleware)
+
+# CSRF protection middleware (before CORS to validate before cross-origin handling)
+app.add_middleware(CSRFMiddleware)
 
 # Parse CORS allowed origins from comma-separated env var
 allowed_origins = [origin.strip() for origin in settings.CORS_ALLOWED_ORIGINS.split(",") if origin.strip()]
