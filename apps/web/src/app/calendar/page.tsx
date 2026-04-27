@@ -8,7 +8,7 @@ export const metadata = { title: 'Calendar — ForgeOS' };
  */
 export default function CalendarPage() {
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col overflow-hidden">
       <CalendarView />
     </div>
   );
