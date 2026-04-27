@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { getApiBase } from '@/lib/api';
 import WorkspaceLayout from '@/components/workspace/WorkspaceLayout';
 
 export default function WorkspacePage({ params }: { params: { deliverableId: string } }) {

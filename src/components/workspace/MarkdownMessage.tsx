@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { marked } from 'marked';
 import hljs from 'highlight.js';
 import 'highlight.js/styles/github-dark.css';
@@ -21,7 +21,9 @@ interface LinkArgs {
 }
 
 export default function MarkdownMessage({ content }: MarkdownMessageProps) {
-  const html = useMemo(() => {
+  const [html, setHtml] = React.useState<string>('');
+  
+  React.useEffect(() => {
     // Configure marked with highlight.js for code blocks
     marked.setOptions({
       breaks: true,
@@ -54,24 +56,26 @@ export default function MarkdownMessage({ content }: MarkdownMessageProps) {
     };
 
     marked.setOptions({ renderer });
-
-    return marked(content);
-  }, [content]);
-
-  // Extract and replace skill/playbook references
-  const processedHtml = useMemo(() => {
-    const result = html;
     
-    // The HTML is used as-is; references are handled in ChipReferences component
-    return result;
-  }, [html]);
+    // marked() can be sync or async depending on config
+    const result = marked(content);
+    if (result instanceof Promise) {
+      result.then(html => {
+        setHtml(html);
+      }).catch(() => {
+        setHtml(content);
+      });
+    } else {
+      setHtml(result);
+    }
+  }, [content]);
 
   return (
     <div className="prose prose-sm max-w-none dark:prose-invert text-sm">
       {/* Parse HTML and render with proper styling */}
       <div
         className="space-y-2 text-gray-900"
-        dangerouslySetInnerHTML={{ __html: processedHtml }}
+        dangerouslySetInnerHTML={{ __html: html }}
       />
       
       {/* Inline skill/playbook chip rendering */}
