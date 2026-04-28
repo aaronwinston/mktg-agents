@@ -2,7 +2,7 @@
 
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 import asyncio
 
@@ -73,7 +73,7 @@ async def poll_trends(
                     if existing:
                         existing.interest_over_time_json = interest_json
                         existing.related_queries_json = related_json
-                        existing.fetched_at = datetime.utcnow()
+                        existing.fetched_at = datetime.now(timezone.utc)
                         session.add(existing)
                         logger.debug(f"Updated trends data for {keyword}")
                     else:

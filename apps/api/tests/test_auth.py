@@ -120,7 +120,7 @@ class TestAuthAuthorization:
             "sub": "test-user",
             "org_id": "test-org",
             "role": "member",
-            "exp": datetime.utcnow() - timedelta(hours=1)
+            "exp": datetime.now(timezone.utc) - timedelta(hours=1)
         }
         expired_token = jwt.encode(
             expired_payload,

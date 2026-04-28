@@ -7,7 +7,7 @@ import uuid
 import jwt
 from fastapi.testclient import TestClient
 from sqlmodel import Session
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from main import app
 from database import engine
@@ -49,8 +49,8 @@ def make_valid_token(user_id: str, org_id: str, role: str = "member") -> str:
         "sub": user_id,
         "org_id": org_id,
         "role": role,
-        "iat": datetime.utcnow(),
-        "exp": datetime.utcnow() + timedelta(hours=1),
+        "iat": datetime.now(timezone.utc),
+        "exp": datetime.now(timezone.utc) + timedelta(hours=1),
     }
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm="HS256")
 
@@ -60,8 +60,8 @@ def make_expired_token(user_id: str, org_id: str) -> str:
         "sub": user_id,
         "org_id": org_id,
         "role": "member",
-        "iat": datetime.utcnow() - timedelta(hours=2),
-        "exp": datetime.utcnow() - timedelta(hours=1),
+        "iat": datetime.now(timezone.utc) - timedelta(hours=2),
+        "exp": datetime.now(timezone.utc) - timedelta(hours=1),
     }
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm="HS256")
 

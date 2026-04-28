@@ -151,7 +151,7 @@ def google_callback(code: str, state: str, auth: AuthContext = Depends(get_curre
             integration.refresh_token = credentials.refresh_token or integration.refresh_token
             integration.expires_at = expires_at
             integration.calendar_id = calendar_id
-            integration.updated_at = datetime.utcnow()
+            integration.updated_at = datetime.now(timezone.utc)
         else:
             integration = CalendarIntegration(
                 organization_id=auth.org_id,
@@ -467,7 +467,7 @@ def select_gsc_property(property_url: str, auth: AuthContext = Depends(get_curre
         metadata["gsc_property"] = property_url
         
         integration.calendar_id = property_url  # Reuse calendar_id field for GSC property
-        integration.updated_at = datetime.utcnow()
+        integration.updated_at = datetime.now(timezone.utc)
         session.add(integration)
         session.commit()
         

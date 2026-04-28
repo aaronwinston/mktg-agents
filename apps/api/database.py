@@ -313,8 +313,79 @@ def create_db_and_tables():
             f"Alembic migration failed, falling back to legacy migrations: {e}"
         )
         run_migrations()
-        return
+    else:
+        # Ensure legacy SQL migrations are applied (covers base schema + incremental additions
+        # like AuditLog). For now, Alembic migrations in this repo are effectively no-op.
+        run_migrations()
+    
+    # In personal mode, ensure the personal org and user exist
+    from personal_mode import is_personal, PERSONAL_USER_ID, PERSONAL_ORG_ID, PERSONAL_ORG_NAME
+    if is_personal():
+        _ensure_personal_org_and_user()
 
-    # Ensure legacy SQL migrations are applied (covers base schema + incremental additions
-    # like AuditLog). For now, Alembic migrations in this repo are effectively no-op.
-    run_migrations()
+
+def _ensure_personal_org_and_user():
+    """Ensure personal organization and user exist in personal mode.
+    
+    This is idempotent and runs on every startup. In personal mode, we want
+    to guarantee that aaron / personal exists before any other operations.
+    """
+    from personal_mode import PERSONAL_USER_ID, PERSONAL_ORG_ID, PERSONAL_ORG_NAME
+    from models import Organization, User, Membership
+    from sqlmodel import Session, select
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    with Session(engine) as session:
+        # Check if personal org exists
+        personal_org = session.exec(
+            select(Organization).where(Organization.id == PERSONAL_ORG_ID)
+        ).first()
+        
+        if not personal_org:
+            logger.info(f"Creating personal organization: {PERSONAL_ORG_ID}")
+            personal_org = Organization(
+                id=PERSONAL_ORG_ID,
+                name=PERSONAL_ORG_NAME,
+                slug="personal",
+                plan="pro",
+            )
+            session.add(personal_org)
+            session.commit()
+            session.refresh(personal_org)
+        
+        # Check if personal user exists
+        personal_user = session.exec(
+            select(User).where(User.user_id == PERSONAL_USER_ID)
+        ).first()
+        
+        if not personal_user:
+            logger.info(f"Creating personal user: {PERSONAL_USER_ID}")
+            personal_user = User(
+                user_id=PERSONAL_USER_ID,
+                email=f"{PERSONAL_USER_ID}@personal.local",
+                name="Aaron",
+            )
+            session.add(personal_user)
+            session.commit()
+            session.refresh(personal_user)
+        
+        # Check if membership exists
+        membership = session.exec(
+            select(Membership).where(
+                Membership.user_id == personal_user.id
+            ).where(
+                Membership.org_id == personal_org.id
+            )
+        ).first()
+        
+        if not membership:
+            logger.info(f"Creating membership for {PERSONAL_USER_ID} in {PERSONAL_ORG_ID}")
+            membership = Membership(
+                user_id=personal_user.id,
+                org_id=personal_org.id,
+                role="owner",
+            )
+            session.add(membership)
+            session.commit()

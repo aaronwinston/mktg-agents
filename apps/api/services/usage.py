@@ -1,6 +1,6 @@
 """Usage tracking and billing calculations."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlmodel import Session, select, func
 from models import UsageEvent, Organization
 from typing import Optional, Dict
@@ -22,7 +22,7 @@ class UsageTracker:
             event_type=event_type,
             metadata=metadata or {},
             cost_cents=cost_cents,
-            recorded_at=datetime.utcnow(),
+            recorded_at=datetime.now(timezone.utc),
         )
         session.add(event)
         session.commit()
@@ -34,7 +34,7 @@ class UsageTracker:
         organization_id: int,
     ) -> Dict:
         """Get usage stats for current calendar month."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         month_start = datetime(now.year, now.month, 1)
         month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(seconds=1)
         

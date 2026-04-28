@@ -5,7 +5,7 @@ from models import Project, Folder, Deliverable, Brief, ScrapeItem
 from middleware.auth import get_current_user, AuthContext
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 from monitoring import time_operation, trace_operation
 from services.query_optimization import PaginationParams, add_pagination
@@ -314,7 +314,7 @@ def update_deliverable(
     update_data = data.dict(exclude_unset=True)
     for k, v in update_data.items():
         setattr(d, k, v)
-    d.updated_at = datetime.utcnow()
+    d.updated_at = datetime.now(timezone.utc)
     session.add(d)
     session.commit()
     session.refresh(d)
@@ -545,7 +545,7 @@ def workspace_from_briefing_item(
     session.commit()
 
     # Mark item as surfaced
-    item.surfaced_to_user_at = datetime.utcnow()
+    item.surfaced_to_user_at = datetime.now(timezone.utc)
     session.add(item)
     session.commit()
 
@@ -673,7 +673,7 @@ def update_calendar_event(
     event.description = data.description
     event.start_at = data.start_at
     event.end_at = data.end_at
-    event.updated_at = datetime.utcnow()
+    event.updated_at = datetime.now(timezone.utc)
     session.add(event)
     session.commit()
     
@@ -703,7 +703,7 @@ def delete_calendar_event(
         raise HTTPException(status_code=404, detail="Calendar event not found")
     
     event.status = "archived"
-    event.updated_at = datetime.utcnow()
+    event.updated_at = datetime.now(timezone.utc)
     session.add(event)
     session.commit()
     

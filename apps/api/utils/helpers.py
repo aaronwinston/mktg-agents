@@ -1,7 +1,7 @@
 """Helper utilities for ForgeOS API."""
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, TypeVar, Generic, List
 import logging
 
@@ -169,7 +169,7 @@ def is_expired(created_at: datetime, ttl_seconds: int) -> bool:
     if not isinstance(created_at, datetime):
         return True
     
-    elapsed = (datetime.utcnow() - created_at).total_seconds()
+    elapsed = (datetime.now(timezone.utc) - created_at).total_seconds()
     return elapsed > ttl_seconds
 
 

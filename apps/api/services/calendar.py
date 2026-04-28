@@ -1,6 +1,6 @@
 import logging
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 from sqlmodel import Session, select
 from database import engine
@@ -149,7 +149,7 @@ def sync_to_google(event_id: int) -> Dict[str, Any]:
                 _log_sync("push_insert", event_id, "success", None, result["id"])
                 logger.info(f"Inserted Google event {result['id']} for local event {event_id}")
             
-            event.synced_to_google_at = datetime.utcnow()
+            event.synced_to_google_at = datetime.now(timezone.utc)
             session.add(event)
             session.commit()
             
@@ -202,7 +202,7 @@ def poll_from_google() -> Dict[str, Any]:
             credentials = _get_valid_credentials(integration, session)
             service = build("calendar", "v3", credentials=credentials)
             
-            updated_min = integration.last_synced_at or (datetime.utcnow() - timedelta(hours=24))
+            updated_min = integration.last_synced_at or (datetime.now(timezone.utc) - timedelta(hours=24))
             
             events_result = service.events().list(
                 calendarId=integration.calendar_id,
@@ -229,7 +229,7 @@ def poll_from_google() -> Dict[str, Any]:
                     errors.append(error_msg)
                     _log_sync("poll", None, "error", error_msg)
             
-            integration.last_synced_at = datetime.utcnow()
+            integration.last_synced_at = datetime.now(timezone.utc)
             session.add(integration)
             session.commit()
             
@@ -323,7 +323,7 @@ def _apply_google_event(session: Session, integration: CalendarIntegration, goog
     local_event.end_at = datetime.fromisoformat(
         google_event["end"].get("dateTime", google_event["end"].get("date")).replace("Z", "+00:00")
     )
-    local_event.last_synced_at = datetime.utcnow()
+    local_event.last_synced_at = datetime.now(timezone.utc)
     session.add(local_event)
     
     logger.info(f"Updated local event {local_event.id} from Google: {old_title} -> {local_event.title}")
@@ -345,7 +345,7 @@ def _get_valid_credentials(integration: CalendarIntegration, session: Session) -
     If token expires within 5 minutes, refresh immediately.
     Logs error but does not raise on transient failures (will be retried on next cycle).
     """
-    if integration.expires_at <= datetime.utcnow() + timedelta(minutes=5):
+    if integration.expires_at <= datetime.now(timezone.utc) + timedelta(minutes=5):
         logger.debug("Token expiring soon, refreshing...")
         credentials = Credentials(
             token=integration.access_token,

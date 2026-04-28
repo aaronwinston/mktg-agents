@@ -8,7 +8,7 @@ from models import PipelineRun, Brief, Deliverable, Folder, Project
 from middleware.auth import get_current_user, AuthContext
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/api/sessions", tags=["sessions"])
 
@@ -157,7 +157,7 @@ def update_session(
         raise HTTPException(status_code=404, detail="Session not found")
     for field, value in data.dict(exclude_none=True).items():
         setattr(s, field, value)
-    s.updated_at = datetime.utcnow()
+    s.updated_at = datetime.now(timezone.utc)
     session.add(s)
     session.commit()
     session.refresh(s)
@@ -177,7 +177,7 @@ def delete_session(
     if not s:
         raise HTTPException(status_code=404, detail="Session not found")
     s.deleted = True
-    s.updated_at = datetime.utcnow()
+    s.updated_at = datetime.now(timezone.utc)
     session.add(s)
     session.commit()
     return {"ok": True}
@@ -243,7 +243,7 @@ async def run_session(
             if sess:
                 sess.status = "complete"
                 sess.progress = 100
-                sess.updated_at = datetime.utcnow()
+                sess.updated_at = datetime.now(timezone.utc)
                 db.add(sess)
                 db.commit()
                 
@@ -252,7 +252,7 @@ async def run_session(
                     deliverable = db.get(Deliverable, sess.deliverable_id)
                     if deliverable:
                         deliverable.body_md = final_output
-                        deliverable.updated_at = datetime.utcnow()
+                        deliverable.updated_at = datetime.now(timezone.utc)
                         db.add(deliverable)
                         db.commit()
         

@@ -1,0 +1,27 @@
+WORDPRESS IMPORT FILE
+=====================
+
+Title: Aparna's latest insights
+Author: Aparna Dhinakaran
+Date: 2026-04-27 11:50:18
+Category: Founder Insights
+Tags: product-thinking, ai, aparna, founder-insights
+Source: https://x.com/aparnadhinak/status/2048492731929149929
+Source Author: @aparnadhinak
+
+---
+
+Here's where the tweet content would go.
+
+This would be extracted from the X post and cleaned for WordPress import.
+
+Source URL: https://x.com/aparnadhinak/status/2048492731929149929
+Posted by: Aparna Dhinakaran
+Type: post
+Category: Founder Insights
+
+---
+
+Original X post: https://x.com/aparnadhinak/status/2048492731929149929
+Posted: 2026-04-27T11:50:18.656465
+Engagement: 0 retweets, 0 likes

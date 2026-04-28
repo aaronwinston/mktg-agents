@@ -1,4 +1,5 @@
 import { validateConfig } from './config';
+import { getHeadersWithCSRF } from './csrf';
 
 // Validate configuration on module load
 if (typeof window !== 'undefined') {
@@ -172,6 +173,13 @@ export async function refreshBriefing(): Promise<BriefingResponse> {
   return result;
 }
 
+export async function submitBriefingFeedback(itemId: number, feedbackType: 'thumbs_up' | 'thumbs_down'): Promise<{ ok: boolean } | ApiError> {
+  return apiFetch<{ ok: boolean }>(`/api/briefing/${itemId}/feedback`, { 
+    method: 'POST', 
+    body: JSON.stringify({ feedback_type: feedbackType }) 
+  });
+}
+
 export async function getProjects(): Promise<Project[]> {
   const result = await apiFetch<Project[]>('/api/projects');
   if (isApiError(result)) return [];
@@ -182,13 +190,16 @@ export function streamSession(
   sessionId: number,
   onUpdate: (event: Record<string, unknown>) => void,
 ): () => void {
-  const es = new EventSource(`${API_BASE}/api/sessions/${sessionId}/stream`);
+  const csrfToken = getCSRFToken();
+  const es = new EventSource(`${API_BASE}/api/sessions/${sessionId}/stream?csrf_token=${encodeURIComponent(csrfToken)}`);
   es.onmessage = (e) => {
     try {
       const data = JSON.parse(e.data);
       onUpdate(data);
       if (data.type === 'done') es.close();
-    } catch {}
+    } catch (parseError) {
+      console.error('Failed to parse session stream:', parseError);
+    }
   };
   es.onerror = () => es.close();
   return () => es.close();
@@ -206,7 +217,7 @@ export function streamChat(
   
   fetch(`${API_BASE}/api/chat/stream`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: getHeadersWithCSRF({ 'Content-Type': 'application/json' }),
     body: JSON.stringify({
       message,
       session_id: sessionId,
@@ -238,7 +249,11 @@ export function streamChat(
             try {
               const data = JSON.parse(line.slice(6));
               if (data.chunk) onChunk(data.chunk);
-            } catch {}
+              if (data.done) onComplete?.();
+              if (data.error) onError?.(data.error);
+            } catch (parseError) {
+              console.error('Failed to parse SSE chunk:', parseError);
+            }
           }
         }
       }
@@ -250,6 +265,10 @@ export function streamChat(
   });
   
   return () => controller.abort();
+}
+
+export async function getEngineHealth(): Promise<Record<string, unknown> | ApiError> {
+  return apiFetch<Record<string, unknown>>('/api/doctrine/health');
 }
 
 export const api = {
@@ -269,6 +288,8 @@ export const api = {
   dismissItem: (id: number) => apiFetch<unknown>(`/api/intelligence/items/${id}/dismiss`, { method: 'POST' }),
   useAsContext: (id: number) => apiFetch<unknown>(`/api/intelligence/items/${id}/use-as-context`, { method: 'POST' }),
   triggerScrape: () => apiFetch<unknown>('/api/intelligence/scrape', { method: 'POST' }),
+  submitBriefingFeedback: (itemId: number, feedbackType: 'thumbs_up' | 'thumbs_down') => 
+    submitBriefingFeedback(itemId, feedbackType),
   getFileTree: () => apiFetch<unknown>('/api/files/tree'),
   getSkills: () => apiFetch<unknown[]>('/api/files/skills'),
   getPlaybooks: () => apiFetch<unknown[]>('/api/files/playbooks'),
@@ -277,6 +298,7 @@ export const api = {
   createChatSession: (projectId?: number) => apiFetch<unknown>('/api/chat/session', { method: 'POST', body: JSON.stringify({ project_id: projectId }) }),
   getMessages: (sessionId: number) => apiFetch<unknown[]>(`/api/chat/session/${sessionId}/messages`),
   generateBrief: (data: unknown) => apiFetch<unknown>('/api/chat/brief', { method: 'POST', body: JSON.stringify(data) }),
+  getEngineHealth: () => getEngineHealth(),
 };
 
 // ---------------------------------------------------------------------------

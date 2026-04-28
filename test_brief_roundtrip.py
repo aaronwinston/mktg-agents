@@ -5,7 +5,7 @@ Test Brief round-trip save and reload functionality
 import sys
 import sqlite3
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 DB_PATH = "apps/api/forgeos.db"
 
@@ -50,7 +50,7 @@ def test_brief_roundtrip():
         UPDATE brief 
         SET title = ?, audience = ?, description = ?, brief_md = ?, toggles_json = ?, updated_at = ?
         WHERE id = ?
-    """, (new_title, new_audience, new_description, new_description, json.dumps(new_toggles), datetime.utcnow(), brief_id))
+    """, (new_title, new_audience, new_description, new_description, json.dumps(new_toggles), datetime.now(timezone.utc), brief_id))
     
     conn.commit()
     print(f"\n✅ Updated brief in database")

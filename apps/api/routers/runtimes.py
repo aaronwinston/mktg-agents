@@ -8,7 +8,7 @@ from middleware.auth import get_current_user, AuthContext
 from services.crypto import get_vault
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/api/runtimes", tags=["runtimes"])
 
@@ -105,7 +105,7 @@ async def validate_runtime_key(
         # Test call (implementation depends on runtime)
         # For now, just mark as valid
         cred.is_valid = True
-        cred.last_validated_at = datetime.utcnow()
+        cred.last_validated_at = datetime.now(timezone.utc)
         session.add(cred)
         session.commit()
         

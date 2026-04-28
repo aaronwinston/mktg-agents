@@ -2,13 +2,17 @@ import time
 from fastapi import APIRouter, Depends, Query
 from cache import briefing_cache
 from database import get_session
-from models import ScrapeItem
+from models import ScrapeItem, BriefingFeedback
 from middleware.auth import get_current_user, AuthContext
 from sqlmodel import Session, select
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
+from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/briefing", tags=["briefing"])
+
+class FeedbackRequest(BaseModel):
+    feedback_type: str  # thumbs_up or thumbs_down
 
 SOURCE_COLORS = {
     "hackernews": "#FF6600",
@@ -50,10 +54,10 @@ def _query_items(db: Session, org_id: str, date: Optional[str] = None):
             end = start + timedelta(days=1)
         except ValueError:
             # Fallback to last 24h on bad date
-            end = datetime.utcnow()
+            end = datetime.now(timezone.utc)
             start = end - timedelta(hours=24)
     else:
-        end = datetime.utcnow()
+        end = datetime.now(timezone.utc)
         start = end - timedelta(hours=24)
 
     return db.exec(
@@ -105,3 +109,33 @@ async def refresh_briefing(
         return result
     except Exception as e:
         return {"stories": [], "error": str(e), "refreshed_at": None}
+
+@router.post("/{item_id}/feedback")
+async def submit_feedback(
+    item_id: int,
+    feedback: FeedbackRequest,
+    auth: AuthContext = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
+    """Submit thumbs up/down feedback on a briefing item."""
+    if feedback.feedback_type not in ("thumbs_up", "thumbs_down"):
+        return {"error": "feedback_type must be 'thumbs_up' or 'thumbs_down'"}, 400
+    
+    try:
+        # Create feedback record
+        fb = BriefingFeedback(
+            briefing_item_id=item_id,
+            user_id=auth.user_id,
+            feedback_type=feedback.feedback_type
+        )
+        session.add(fb)
+        session.commit()
+        
+        # Invalidate cache so next briefing fetch is fresh
+        for key in [f"briefing:{auth.org_id}:today", "briefing_health"]:
+            briefing_cache.clear(key)
+        
+        return {"ok": True, "feedback_type": feedback.feedback_type}
+    except Exception as e:
+        return {"error": str(e)}, 500
+

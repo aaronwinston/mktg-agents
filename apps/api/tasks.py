@@ -6,7 +6,7 @@ from celery_app import celery_app
 from sqlmodel import Session, select
 from database import engine
 from models import Organization, ScrapeItem, CalendarEvent, Session as ChatSession
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import logging
 import asyncio
 
@@ -222,7 +222,7 @@ def send_email_digest(self):
                     continue
                 
                 # Get recent items for this org
-                cutoff = datetime.utcnow() - timedelta(days=1)
+                cutoff = datetime.now(timezone.utc) - timedelta(days=1)
                 items = session.exec(
                     select(ScrapeItem)
                     .where(ScrapeItem.organization_id == org.id)
@@ -302,7 +302,7 @@ def send_slack_digest(self):
                     continue
                 
                 # Get recent high-scoring items
-                cutoff = datetime.utcnow() - timedelta(days=1)
+                cutoff = datetime.now(timezone.utc) - timedelta(days=1)
                 items = session.exec(
                     select(ScrapeItem)
                     .where(ScrapeItem.organization_id == org.id)
@@ -375,7 +375,7 @@ def cleanup_old_data(self):
     """Archive or delete old data to maintain database performance."""
     try:
         session = self._session
-        cutoff = datetime.utcnow() - timedelta(days=90)  # 90 days retention
+        cutoff = datetime.now(timezone.utc) - timedelta(days=90)  # 90 days retention
         
         # Delete old scrape items with low scores
         deleted_items = session.exec(
@@ -408,7 +408,7 @@ def archive_completed_sessions(self):
     """Archive completed chat sessions older than 30 days."""
     try:
         session = self._session
-        cutoff = datetime.utcnow() - timedelta(days=30)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=30)
         
         # Mark old sessions as archived
         old_sessions = session.exec(
@@ -452,7 +452,7 @@ def generate_weekly_report(self):
         for org in orgs:
             try:
                 # Calculate weekly stats
-                week_ago = datetime.utcnow() - timedelta(days=7)
+                week_ago = datetime.now(timezone.utc) - timedelta(days=7)
                 
                 items_count = session.exec(
                     select(ScrapeItem)
@@ -463,7 +463,7 @@ def generate_weekly_report(self):
                 avg_score = sum(item.score for item in items_count) / len(items_count) if items_count else 0
                 
                 report_data = {
-                    "week_ending": datetime.utcnow().isoformat(),
+                    "week_ending": datetime.now(timezone.utc).isoformat(),
                     "items_collected": len(items_count),
                     "average_score": round(avg_score, 2),
                     "top_sources": {}  # Could add more analytics

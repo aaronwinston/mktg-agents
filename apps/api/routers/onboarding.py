@@ -7,7 +7,7 @@ from models import Organization, Project, Folder
 from middleware.auth import get_current_user, AuthContext
 from pydantic import BaseModel
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import anthropic
 
@@ -277,7 +277,7 @@ async def update_onboarding_state(
     
     # Store completed steps as JSON
     org.onboarding_completed_steps = json.dumps(req.completed_steps)
-    org.updated_at = datetime.utcnow()
+    org.updated_at = datetime.now(timezone.utc)
     session.add(org)
     session.commit()
     

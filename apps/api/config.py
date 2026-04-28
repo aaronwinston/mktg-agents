@@ -6,6 +6,11 @@ import os
 class Settings(BaseSettings):
     # Repo root is 3 levels up from apps/api/ (apps/api -> apps -> repo_root)
     REPO_ROOT: Path = Path(__file__).parent.parent.parent
+    
+    # Personal mode flag: 'personal' (default) or 'multi_tenant'
+    # In personal mode, auth is bypassed and all features are enabled
+    FORGEOS_MODE: str = "personal"
+    
     ANTHROPIC_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
     LLM_PROVIDER: str = "anthropic"

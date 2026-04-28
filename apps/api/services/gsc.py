@@ -1,7 +1,7 @@
 """Google Search Console integration service."""
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from google.auth.transport.requests import Request
@@ -50,7 +50,7 @@ class GSCService:
                 request = Request()
                 self.credentials.refresh(request)
 
-            end_date = datetime.utcnow().date()
+            end_date = datetime.now(timezone.utc).date()
             start_date = end_date - timedelta(days=days_back)
 
             request_body = {

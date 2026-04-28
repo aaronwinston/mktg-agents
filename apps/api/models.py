@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 import uuid
 
@@ -201,6 +201,20 @@ class ScrapeItem(SQLModel, table=True):
     dismissed_at: Optional[datetime] = None
 
 
+class BriefingFeedback(SQLModel, table=True):
+    __table_args__ = (
+        CheckConstraint("feedback_type IN ('thumbs_up','thumbs_down')", name="ck_briefingfeedback_type"),
+        Index("idx_briefingfeedback_item", "briefing_item_id"),
+        Index("idx_briefingfeedback_user_created", "user_id", "created_at"),
+    )
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    briefing_item_id: int = Field(foreign_key="scrapeitem.id")
+    user_id: str  # No FK; users are external (Clerk)
+    feedback_type: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class PipelineRun(SQLModel, table=True):
     __table_args__ = (
         CheckConstraint(
@@ -303,7 +317,7 @@ class CalendarIntegration(SQLModel, table=True):
     def is_token_expired(self) -> bool:
         if not self.expires_at:
             return True
-        return datetime.utcnow() >= self.expires_at
+        return datetime.now(timezone.utc) >= self.expires_at
 
     def refresh_if_needed(self):
         from services.oauth import refresh_oauth_token_if_needed
@@ -319,7 +333,7 @@ class CalendarIntegration(SQLModel, table=True):
             )
             self.access_token = new_access
             self.refresh_token = new_refresh
-            self.updated_at = datetime.utcnow()
+            self.updated_at = datetime.now(timezone.utc)
             return True
         except Exception as e:
             import logging

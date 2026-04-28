@@ -7,7 +7,7 @@ from models import Organization, ScrapeItem
 from middleware.auth import get_current_user, AuthContext
 from pydantic import BaseModel
 from typing import Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 router = APIRouter(prefix="/api/mission-control", tags=["mission-control"])
 
@@ -37,7 +37,7 @@ async def update_email_digest_settings(
         "send_time_utc": req.send_time_utc
     }
     org.metadata_json = json.dumps(settings)
-    org.updated_at = datetime.utcnow()
+    org.updated_at = datetime.now(timezone.utc)
     session.add(org)
     session.commit()
     
@@ -76,7 +76,7 @@ async def send_test_email_digest(
         raise HTTPException(status_code=404, detail="Organization not found")
     
     # Get top 5 scrape items from last 24h
-    yesterday = datetime.utcnow() - timedelta(days=1)
+    yesterday = datetime.now(timezone.utc) - timedelta(days=1)
     items = session.exec(
         select(ScrapeItem).where(
             (ScrapeItem.organization_id == auth.org_id) &
@@ -124,7 +124,7 @@ async def update_slack_webhook(
     
     metadata["slack_webhook_url"] = req.webhook_url
     org.metadata_json = json.dumps(metadata)
-    org.updated_at = datetime.utcnow()
+    org.updated_at = datetime.now(timezone.utc)
     session.add(org)
     session.commit()
     
